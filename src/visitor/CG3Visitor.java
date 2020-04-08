@@ -99,7 +99,7 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
-    public Object visitIdentifierExp(IdentifierExp n) {
+    public Object visitIdentifierExp(IdentifierExp n) { //might be bugs in it
         if (n.link instanceof InstVarDecl) {
             // determine variable's offset?
             code.emit(n, "lw $t0,"+n.pos+"($s2"); //not sure if this is what he meant
@@ -235,6 +235,18 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
+    public Object visitOr(Or n) {
+        n.left.accept(this);
+        code.emit(n, "lw $t0,($sp)");
+        code.emit(n, "beq $t0,$zero,skip_"+n.uniqueId);
+        code.emit(n, "addu $sp,$sp,4");
+        stackHeight -= 4;
+        n.right.accept(this);
+        code.emit(n, "skip_"+n.uniqueId+":");
+	    return null;
+    }
+
+    @Override
     public Object visitArrayLength(ArrayLength n) {
         n.exp.accept(this);
         code.emit(n, "lw $t0, ($sp)");
@@ -273,35 +285,111 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
-    public Object visitInstVarAccess(InstVarAccess n) {
+    public Object visitInstVarAccess(InstVarAccess n) { //not sure what is the offset, assumed it's n.pos
         n.exp.accept(this);
-        int offest = n.pos;
-	    return super.visitInstVarAccess(n);
+        int offset = n.pos;
+        code.emit(n, "lw $t0,($sp)");
+        code.emit(n, "beq $t0,$zero,nullPtrException");
+        code.emit(n, "lw $t0,"+offset+"($t0)");
+        if (n.type instanceof IntegerType) {
+            code.emit(n, "subu $sp,$sp,4");
+            stackHeight -= 4;
+            code.emit(n, "sw $s5,4($sp)");
+            code.emit(n, "sw $t0,($sp)");
+        } else {
+            code.emit(n, "sw $t0,($sp)");
+        }
+	    return null;
     }
 
     @Override
     public Object visitInstanceOf(InstanceOf n) {
-        return super.visitInstanceOf(n);
+        n.exp.accept(this);
+        code.emit(n, "la $t0,CLASS_"+CG1Visitor.vtableNameFor(n.type));
+        code.emit(n, "la $t1,END_CLASS_"+CG1Visitor.vtableNameFor(n.type));
+        code.emit(n, "jal instanceOf");
+	    return null;
     }
 
     @Override
     public Object visitCast(Cast n) {
-        return super.visitCast(n);
+        n.exp.accept(this);
+        if (n.type.getClass().equals(n.castType.getClass().getGenericSuperclass())) { //might be a bug
+            code.emit(n, "la $t0,CLASS_"+CG1Visitor.vtableNameFor(n.type));
+            code.emit(n, "la $t1,END_CLASS_"+CG1Visitor.vtableNameFor(n.type));
+            code.emit(n, "jal checkCast");
+        }
+	    return null;
     }
 
     @Override
     public Object visitNewObject(NewObject n) {
-        return super.visitNewObject(n);
+        int numOfObjInstVar = n.objType.link.numObjInstVars;
+        int numOfDataInstVar = n.objType.link.numDataInstVars+1;
+        code.emit(n, "li $s6,"+numOfDataInstVar);
+        code.emit(n, "li $s7,"+numOfObjInstVar);
+        code.emit(n, "jal newObject");
+        stackHeight -= 16; //1 word is 16 bits?
+        code.emit(n, "la $t0,CLASS_"+n.objType.name);
+        code.emit(n, "sw $t0,-12($s7)");
+	    return null;
     }
 
     @Override
     public Object visitNewArray(NewArray n) {
-        return super.visitNewArray(n);
+        n.sizeExp.accept(this);
+        code.emit(n, "lw $s7,($sp)");
+        code.emit(n, "addu $sp,$sp,8");
+        stackHeight -= 8;
+        code.emit(n, "li $s6,1");
+        code.emit(n, "jal newObject");
+        stackHeight -= 16; //1 word is 16 bits?
+        code.emit(n, "la $t0,CLASS_"+CG1Visitor.vtableNameFor(n.objType));
+        code.emit(n, "sw $t0,-12($s7)");
+	    return null;
     }
 
     @Override
-    public Object visitCall(Call n) {
-        return super.visitCall(n);
+    public Object visitCall(Call n) { // needs check for bugs
+	    if (n.obj.type.toString().equals("Super")) {
+            int oldStackHeight = stackHeight;
+            n.obj.accept(this);
+            n.parms.accept(this);
+            if (n.methodLink.pos < 0) {
+                code.emit(n, "jal methodName_className");
+            } else {
+                code.emit(n, "jal fcn_"+n.obj.uniqueId+"_methodName");
+            }
+            if (n.obj.type instanceof IntegerType) {
+                stackHeight = oldStackHeight + 8;
+            } else if (n.obj.type instanceof VoidType) {
+                stackHeight = oldStackHeight;
+            } else {
+                stackHeight = oldStackHeight + 4;
+            }
+        } else {
+            int oldStackHeight = stackHeight;
+            n.obj.accept(this);
+            n.parms.accept(this);
+            int MMM = n.methodLink.thisPtrOffset-4;
+            int NNN = 4*n.methodLink.vtableOffset;
+            if (n.obj == null) {
+                code.emit(n, "lw $t0,"+MMM+"($sp)");
+                code.emit(n, "beq $t0,$zero,nullPtrException");
+            } else {
+                code.emit(n, "lw $t0,-12($t0)");
+                code.emit(n, "lw $t0,"+NNN+"($t0)");
+            }
+            code.emit(n, "jalr $t0");
+            if (n.obj.type instanceof IntegerType) {
+                stackHeight = oldStackHeight + 8;
+            } else if (n.obj.type instanceof VoidType) {
+                stackHeight = oldStackHeight;
+            } else {
+                stackHeight = oldStackHeight + 4;
+            }
+        }
+	    return null;
     }
 
     @Override
