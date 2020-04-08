@@ -85,8 +85,8 @@ public class CG3Visitor extends ASTvisitor {
 
     @Override
     public Object visitPlus(Plus n) {
-        visitPlus((Plus)n.left); //traverse left-expression
-        visitPlus((Plus)n.right); //traverse right-expression
+        super.visitPlus((Plus)n.left); //traverse left-expression
+        super.visitPlus((Plus)n.right); //traverse right-expression
         //emit code
         code.emit(n, "lw $t0, ($sp)");
         code.emit(n, "lw $t1, 8($sp)");
@@ -99,8 +99,8 @@ public class CG3Visitor extends ASTvisitor {
 
     @Override
     public Object visitMinus(Minus n) {
-        visitMinus((Minus)n.left); //traverse left-expression
-        visitMinus((Minus)n.right); //traverse right-expression
+        super.visitMinus((Minus)n.left); //traverse left-expression
+        super.visitMinus((Minus)n.right); //traverse right-expression
         //emit code
         code.emit(n, "lw $t0, ($sp)");
         code.emit(n, "lw $t1, 8($sp)");
@@ -198,7 +198,8 @@ public class CG3Visitor extends ASTvisitor {
 
     @Override
     public Object visitWhile(While n) {
-        return super.visitWhile(n);
+
+	    return super.visitWhile(n);
     }
 
     @Override
