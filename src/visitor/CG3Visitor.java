@@ -3,6 +3,8 @@ package visitor;
 import syntaxtree.*;
 
 import errorMsg.*;
+import wrangLR.generator.util.ReverseArrayIterator;
+
 import java.io.*;
 
 public class CG3Visitor extends ASTvisitor {
@@ -99,13 +101,13 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
-    public Object visitIdentifierExp(IdentifierExp n) { //might be bugs in it
+    public Object visitIdentifierExp(IdentifierExp n) { // TODO: Check if it is buggy
         if (n.link instanceof InstVarDecl) {
             // determine variable's offset?
-            code.emit(n, "lw $t0,"+n.pos+"($s2"); //not sure if this is what he meant
+            code.emit(n, "lw $t0,"+n.link.offset+"($s2"); //not sure if this is what he meant by "offset"
         }else {
-            stackHeight += n.pos;
-            code.emit(n, "lw $t0,"+n.pos+"($sp)");
+            stackHeight += n.link.offset;
+            code.emit(n, "lw $t0,"+n.link.offset+"($sp)");
         }
         if (n.type instanceof IntegerType) {
             code.emit(n, "subu $sp,$sp,8");
@@ -285,9 +287,9 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
-    public Object visitInstVarAccess(InstVarAccess n) { //not sure what is the offset, assumed it's n.pos
+    public Object visitInstVarAccess(InstVarAccess n) {
         n.exp.accept(this);
-        int offset = n.pos;
+        int offset = n.varDec.offset;
         code.emit(n, "lw $t0,($sp)");
         code.emit(n, "beq $t0,$zero,nullPtrException");
         code.emit(n, "lw $t0,"+offset+"($t0)");
@@ -314,7 +316,7 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitCast(Cast n) {
         n.exp.accept(this);
-        if (n.type.getClass().equals(n.castType.getClass().getGenericSuperclass())) { // this might be a buggy expression
+        if (n.type.getClass().equals(n.castType.getClass().getGenericSuperclass())) { /* TODO: This might be a buggy if statement */
             code.emit(n, "la $t0,CLASS_"+CG1Visitor.vtableNameFor(n.type));
             code.emit(n, "la $t1,END_CLASS_"+CG1Visitor.vtableNameFor(n.type));
             code.emit(n, "jal checkCast");
@@ -350,7 +352,7 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
-    public Object visitCall(Call n) { // needs check for bugs
+    public Object visitCall(Call n) { // TODO: Check for bugs
 	    if (n.obj.type.toString().equals("Super")) {
             int oldStackHeight = stackHeight;
             n.obj.accept(this);
@@ -394,22 +396,49 @@ public class CG3Visitor extends ASTvisitor {
 
     @Override
     public Object visitLocalVarDecl(LocalVarDecl n) {
-        return super.visitLocalVarDecl(n);
+        n.initExp.accept(this);
+        n.offset = -stackHeight;
+	    return null;
     }
 
     @Override
     public Object visitCallStatement(CallStatement n) {
-        return super.visitCallStatement(n);
+        n.callExp.accept(this);
+        if (n.callExp.type instanceof IntegerType) {
+            code.emit(n, "addu $sp,$sp,8");
+            stackHeight -= 8;
+        } else {
+            code.emit(n, "addu $sp,$sp,4");
+            stackHeight -= 4;
+        }
+	    return null;
     }
 
     @Override
     public Object visitBlock(Block n) {
-        return super.visitBlock(n);
+        int oldStackHeight = stackHeight;
+        n.stmts.accept(this);
+        if (stackHeight != oldStackHeight) {
+            int DDD = stackHeight - oldStackHeight;
+            code.emit(n, "addu $sp,"+DDD);
+        }
+        stackHeight = oldStackHeight;
+	    return null;
     }
 
     @Override
     public Object visitIf(If n) {
-        return super.visitIf(n);
+        n.exp.accept(this);
+        code.emit(n, "lw $t0,($sp)");
+        code.emit(n, "addu $sp,$sp,4");
+        stackHeight -= 4;
+        code.emit(n, "beq $t0,$zero,if_else_"+n.uniqueId);
+        n.trueStmt.accept(this);
+        code.emit(n, "j if_done_"+n.uniqueId);
+        code.emit(n, "if_else_"+n.uniqueId+":");
+        n.falseStmt.accept(this);
+        code.emit(n, "if_done_"+n.uniqueId+":");
+	    return null;
     }
 
     @Override
@@ -425,44 +454,167 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight -= 4;
         code.emit(n, "bne $t0,$zero,while_top_"+n.uniqueId);
         code.emit(n, "break_target_"+n.uniqueId+":");
-	    return super.visitWhile(n);
+	    return null;
     }
 
     @Override
     public Object visitBreak(Break n) {
-        return super.visitBreak(n);
+        int diff = stackHeight - n.breakLink.stackHeight;
+        if (diff != 0) {
+            code.emit(n, "addu $sp,"+diff);
+        }
+        code.emit(n, "j break_target_"+n.uniqueId);
+	    return null;
     }
 
     @Override
-    public Object visitAssign(Assign n) { //InstVarAccess
-        return super.visitAssign(n);
+    public Object visitAssign(Assign n) {
+        if (n.lhs instanceof IdentifierExp) {
+            n.rhs.accept(this);
+            code.emit(n, "lw $t0,($sp)");
+            if (((IdentifierExp) n.lhs).link instanceof InstVarDecl) {
+                int NNN = ((IdentifierExp) n.lhs).link.offset;
+                code.emit(n, "sw $t0,"+NNN+"($s2)");
+            } else {
+                int MMM = ((IdentifierExp) n.lhs).link.offset + stackHeight;
+                code.emit(n, "sw $t0,"+MMM+"($sp)");
+            }
+            if (n.lhs.type instanceof IntegerType) {
+                code.emit(n, "addu $sp,$sp,8");
+                stackHeight -= 8;
+            } else {
+                code.emit(n, "addu $sp,$sp,4");
+                stackHeight -= 4;
+            }
+        } else if (n.lhs instanceof InstVarAccess) {
+            ((InstVarAccess) n.lhs).exp.accept(this);
+            n.rhs.accept(this);
+            code.emit(n, "lw $t0,($sp)");
+            if (n.rhs.type instanceof IntegerType) {
+                code.emit(n, "lw $t1,8($sp)");
+            } else {
+                code.emit(n, "lw $t1,4($sp)");
+            }
+            code.emit(n, "beq $t1,$zero,nullPtrException");
+            int NNN = ((InstVarAccess) n.lhs).varDec.offset;
+            code.emit(n, "sw $t0,"+NNN+"($t1)");
+            if (n.lhs.type instanceof IntegerType) {
+                code.emit(n, "addu $sp,$sp,12");
+                stackHeight -= 12;
+            } else {
+                code.emit(n, "addu $sp,$sp,8");
+                stackHeight -= 8;
+            }
+        } else if (n.lhs instanceof ArrayLookup) {
+            ((ArrayLookup) n.lhs).arrExp.accept(this);
+            ((ArrayLookup) n.lhs).idxExp.accept(this);
+            n.rhs.accept(this);
+            code.emit(n, "lw $t0,($sp)");
+            if (n.lhs.type instanceof IntegerType) {
+                code.emit(n, "lw $t1,16($sp)");
+            } else {
+                code.emit(n, "lw $t1,12($sp)");
+            }
+            code.emit(n, "beq $t1,$zero,nullPtrException");
+            if (n.lhs.type instanceof IntegerType) {
+                code.emit(n, "lw $t2,8($sp)");
+            } else {
+                code.emit(n, "lw $t2,4($sp)");
+            }
+            code.emit(n, "lw $t3,-4($t1)");
+            code.emit(n, "bgeu $t2,$t3,arrayIndexOutOfBounds");
+            code.emit(n, "sll $t2,$t2,2");
+            code.emit(n, "addu $t2,$t2,$t1");
+            code.emit(n, "sw $t0,($t2)");
+            if (n.lhs.type instanceof IntegerType) {
+                code.emit(n, "addu $sp,$sp,20");
+                stackHeight -= 20;
+            } else {
+                code.emit(n, "addu $sp,$sp,16");
+                stackHeight -= 16;
+            }
+        }
+	    return null;
     }
 
     @Override
     public Object visitLabel(Label n) {
-        return super.visitLabel(n);
+        stackHeight = n.enclosingSwitch.stackHeight;
+        code.emit(n, "case_label_"+n.uniqueId);
+	    return null;
     }
 
     @Override
-    public Object visitSwitch(Switch n) {
+    public Object visitSwitch(Switch n) { /* TODO: visitSwitch */
         return super.visitSwitch(n);
     }
 
     @Override
     public Object visitMethodDecl(MethodDecl n) {
-        return super.visitMethodDecl(n);
+        code.emit(n, ".globl fcn_"+n.uniqueId+"_"+n.name);
+        code.emit(n, "fcn_"+n.uniqueId+"_"+n.name+":");
+        code.emit(n, "subu $sp,$sp,4");
+        code.emit(n, "sw $s2,($sp)");
+        int NNN = 4; //TODO: determine stack-top-relative location of method’s this-pointer: object’s thisPointerOffset (part A leave it as 4)
+	    code.emit(n, "lw $s2,"+NNN+"($sp)");
+	    code.emit(n, "sw $ra,"+NNN+"($sp)");
+	    stackHeight = 0;
+	    n.stmts.accept(this); // generate code for the method's body
+        int PPP = 4; /* TODO: determine offset of saved return address (says, PPP) */
+        int QQQ = 4; /* TODO: determine offset of saved this-pointer (says, QQQ) relative to current stack height */
+        code.emit(n, "lw $ra,"+PPP+"($sp)");
+        code.emit(n, "lw $r2,"+QQQ+"($sp)");
+        int RRR = stackHeight + PPP + QQQ;
+        code.emit(n, "addu $sp,$sp,"+RRR);
+        code.emit(n, "jr $ra");
+        return null;
     }
 
     @Override
     public Object visitMethodDeclNonVoid(MethodDeclNonVoid n) {
-        return super.visitMethodDeclNonVoid(n);
+        code.emit(n, ".globl fcn_"+n.uniqueId+"_"+n.name);
+        code.emit(n, "fcn_"+n.uniqueId+"_"+n.name+":");
+        code.emit(n, "subu $sp,$sp,4");
+        code.emit(n, "sw $s2,($sp)");
+        int NNN = 4; /*TODO: determine stack-top-relative location of method’s this-pointer: object’s thisPointerOffset (part A leave it as 4)*/
+        code.emit(n, "lw $s2,"+NNN+"($sp)");
+        code.emit(n, "sw $ra,"+NNN+"($sp)");
+        stackHeight = 0;
+        n.stmts.accept(this);
+        n.rtnExp.accept(this);
+        int PPP = 4; /* TODO: determine offset of saved return address (says, PPP) */
+        int QQQ = 4; /* TODO: determine offset of saved this-pointer (says, QQQ) relative to current stack height */
+        code.emit(n, "lw $ra,"+PPP+"($sp)");
+        code.emit(n, "lw $r2,"+QQQ+"($sp)");
+        int SSS = 4;
+        int TTT = 4;
+        code.emit(n, "lw $t0,($sp)");
+        code.emit(n, "sw $t0,"+SSS+"($sp)");
+        if (n.rtnType instanceof IntegerType) {
+            code.emit(n, "sw $s5"+TTT+"($sp)");
+        }
+
+        /* TODO: compute amount to pop stack (say, RRR):
+            current stack height, plus space for saved return address (4), plus space for
+            all parameters, plus space for saved this-pointer (4),
+            minus space for return-value (4 or 8) */
+        int RRR = stackHeight + SSS + TTT;
+        if (n.rtnType instanceof IntegerType) {
+            RRR += 8;
+        } else {
+            RRR += 4;
+        }
+
+        code.emit(n, "addu $sp,$sp,"+ RRR);
+        code.emit(n, "jr $ra");
+	    return null;
     }
 
     @Override
     public Object visitProgram(Program n) {
         code.emit(n, " .text");
         code.emit(n, "main:"); // main label
-        // for not, just emit code to exit cleanly
+        // for now, just emit code to exit cleanly
         code.emit(n, " li $v0,10");
         code.emit(n, " syscall");
 
