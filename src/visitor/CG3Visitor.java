@@ -45,7 +45,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "sw $s5,4($sp)");
         code.emit(n,"li $t0,"+n.val);
         code.emit(n, "sw $t0,($sp)");
-	    return super.visitIntegerLiteral(n);
+	    return null;
     }
 
     @Override
@@ -53,7 +53,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n,"subu $sp,$sp,4");
         stackHeight -= 4;
         code.emit(n, "sw $zero,($sp)");
-	    return super.visitNull(n);
+	    return null;
     }
 
     @Override
@@ -62,7 +62,7 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight -= 4;
         code.emit(n, "li $t0,1");
         code.emit(n, "sw $t0,($sp)");
-	    return super.visitTrue(n);
+	    return null;
     }
 
     @Override
@@ -70,7 +70,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n,"subu $sp,$sp,4");
         stackHeight -= 4;
         code.emit(n, "sw $zero,($sp)");
-	    return super.visitFalse(n);
+	    return null;
     }
 
     @Override
@@ -78,96 +78,205 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "subu $sp,$sp,4");
         stackHeight -= 4;
         code.emit(n, "la $t0,strLit_"+n.uniqueCgRep);
-        code.emit(n, "sw $t0, ($sp)");
-	    return super.visitStringLiteral(n);
+        code.emit(n, "sw $t0,($sp)");
+	    return null;
     }
 
     @Override
     public Object visitThis(This n) {
-        return super.visitThis(n);
+        code.emit(n, "subu $sp,$sp,4");
+        stackHeight -= 4;
+        code.emit(n, "sw $s2,($sp)");
+	    return null;
     }
 
     @Override
     public Object visitSuper(Super n) {
-        return super.visitSuper(n);
+        code.emit(n, "subu $sp,$sp,4");
+        stackHeight -= 4;
+        code.emit(n, "sw $s2,($sp)");
+	    return null;
     }
 
     @Override
     public Object visitIdentifierExp(IdentifierExp n) {
-        return super.visitIdentifierExp(n);
+        if (n.link instanceof InstVarDecl) {
+            // determine variable's offset?
+            code.emit(n, "lw $t0,"+n.pos+"($s2"); //not sure if this is what he meant
+        }else {
+            stackHeight += n.pos;
+            code.emit(n, "lw $t0,"+n.pos+"($sp)");
+        }
+        if (n.type instanceof IntegerType) {
+            code.emit(n, "subu $sp,$sp,8");
+            stackHeight -= 8;
+            code.emit(n, "sw $s5,4($sp)");
+            code.emit(n, "sw $t0,($sp)");
+        }else {
+            code.emit(n, "subu $sp,$sp,4");
+            stackHeight -= 4;
+            code.emit(n, "sw $t0,($sp)");
+        }
+	    return null;
     }
 
     @Override
     public Object visitNot(Not n) {
-        return super.visitNot(n);
+        n.exp.accept(this);
+        code.emit(n, "lw $t0,($sp)");
+        code.emit(n, "xor $t0,$t0,1");
+        code.emit(n, "sw $t0,($sp)");
+	    return null;
     }
 
     @Override
     public Object visitPlus(Plus n) {
-        super.visitPlus((Plus)n.left); //traverse left-expression
-        super.visitPlus((Plus)n.right); //traverse right-expression
+        n.left.accept(this); //traverse left-expression
+        n.right.accept(this); //traverse right-expression
         //emit code
         code.emit(n, "lw $t0,($sp)");
         code.emit(n, "lw $t1,8($sp)");
         code.emit(n, "addu $t0,$t0,$t1");
         code.emit(n, "addu $sp,$sp,8");
-        code.emit(n, "sw $t0,($sp)");
         stackHeight -= 8; //subtract 8 from stackHeight
+        code.emit(n, "sw $t0,($sp)");
 	    return null;
     }
 
     @Override
     public Object visitMinus(Minus n) {
-        super.visitMinus((Minus)n.left); //traverse left-expression
-        super.visitMinus((Minus)n.right); //traverse right-expression
+        n.left.accept(this); //traverse left-expression
+        n.right.accept(this); //traverse right-expression
         //emit code
         code.emit(n, "lw $t0,($sp)");
         code.emit(n, "lw $t1,8($sp)");
         code.emit(n, "subu $t0,$t0,$t1");
         code.emit(n, "subu $sp,$sp,8");
-        code.emit(n, "sw $t0,($sp)");
         stackHeight -= 8; //subtract 8 from stackHeight
+        code.emit(n, "sw $t0,($sp)");
         return null;
     }
 
     @Override
     public Object visitTimes(Times n) {
-        return super.visitTimes(n);
+        n.left.accept(this);
+        n.right.accept(this);
+        code.emit(n, "lw $t0,($sp)");
+        code.emit(n, "lw $t1,8($sp)");
+        code.emit(n, "mult $t0,$t1");
+        code.emit(n, "mflo $t0");
+        code.emit(n, "addu $sp,$sp,8");
+        stackHeight -= 8;
+        code.emit(n, "sw $t0,($sp)");
+	    return null;
     }
 
     @Override
     public Object visitDivide(Divide n) {
-        return super.visitDivide(n);
+        n.left.accept(this);
+        n.right.accept(this);
+        code.emit(n, "jal divide");
+	    return null;
+    }
+
+    @Override
+    public Object visitRemainder(Remainder n) {
+        n.left.accept(this);
+        n.right.accept(this);
+        code.emit(n, "jal remainder");
+	    return null;
     }
 
     @Override
     public Object visitEquals(Equals n) {
-        return super.visitEquals(n);
+        n.left.accept(this);
+        n.right.accept(this);
+        if (n.type instanceof IntegerType) {
+            code.emit(n, "lw $t0,($sp)");
+            code.emit(n, "lw $t1,8($sp)");
+            code.emit(n, "seq $t0,$t0,$t1");
+            code.emit(n, "addu $sp,$sp,12");
+            stackHeight -= 12;
+            code.emit(n, "sw $t0,($sp)");
+        } else {
+            code.emit(n, "lw $t0,($sp)");
+            code.emit(n, "lw $t1,4($sp)");
+            code.emit(n, "seq $t0,$t0,$t1");
+            code.emit(n, "addu $sp,$sp,4");
+            stackHeight -= 4;
+            code.emit(n, "sw $t0,($sp)");
+        }
+	    return null;
     }
 
     @Override
     public Object visitGreaterThan(GreaterThan n) {
-        return super.visitGreaterThan(n);
+        n.left.accept(this);
+        n.right.accept(this);
+        code.emit(n, "lw $t0,($sp)");
+        code.emit(n, "lw $t1,8($sp)");
+        code.emit(n, "sgt $t0,$t1,$t0");
+        code.emit(n, "addu $sp,$sp,12");
+        stackHeight -= 12;
+        code.emit(n, "sw $t0,($sp)");
+	    return null;
     }
 
     @Override
     public Object visitAnd(And n) {
-        return super.visitAnd(n);
+        n.left.accept(this);
+        code.emit(n, "lw $t0,($sp)");
+        code.emit(n, "beq $t0,$zero,skip_"+n.uniqueId);
+        code.emit(n, "addu $sp,$sp,4");
+        stackHeight -= 4;
+        n.right.accept(this);
+        code.emit(n, "skip_"+n.uniqueId+":");
+	    return null;
     }
 
     @Override
     public Object visitArrayLength(ArrayLength n) {
-        return super.visitArrayLength(n);
+        n.exp.accept(this);
+        code.emit(n, "lw $t0, ($sp)");
+        code.emit(n, "beq $t0,$zero,nullPtrException");
+        code.emit(n, "lw $t0,-4($t0)");
+        code.emit(n, "sw $s5,($sp)");
+        code.emit(n, "subu $sp,4");
+        stackHeight -= 4;
+        code.emit(n, "sw $t0,($sp)");
+	    return null;
     }
 
     @Override
     public Object visitArrayLookup(ArrayLookup n) {
+	    n.arrExp.accept(this);
+	    n.idxExp.accept(this);
+        code.emit(n, "lw $t0,8($sp)");
+        code.emit(n, "beq $t0,$zero,nullPtrException");
+        code.emit(n, "lw $t1,-4($t0)");
+        code.emit(n, "lw $t2,($sp)");
+        code.emit(n, "bgeu $t2,$t1,arrayIndexOutOfBounds");
+        code.emit(n, "sll $t2,$t2,2");
+        code.emit(n, "addu $t2,$t2,$t0");
+        code.emit(n, "lw $t0,($t2)");
+        if (n.arrExp.type instanceof IntegerType) {
+            code.emit(n, "sw $t0,4($sp)");
+            code.emit(n, "sw $s5,8($sp)");
+            code.emit(n, "addu $sp,$sp,4");
+            stackHeight -= 4;
+        } else {
+            code.emit(n, "sw $t0,8($sp)");
+            code.emit(n, "addu $sp,$sp,8");
+            stackHeight -= 8;
+        }
         return super.visitArrayLookup(n);
     }
 
     @Override
     public Object visitInstVarAccess(InstVarAccess n) {
-        return super.visitInstVarAccess(n);
+        n.exp.accept(this);
+        int offest = n.pos;
+	    return super.visitInstVarAccess(n);
     }
 
     @Override
