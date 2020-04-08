@@ -85,7 +85,30 @@ public class CG3Visitor extends ASTvisitor {
 
     @Override
     public Object visitPlus(Plus n) {
-        return super.visitPlus(n);
+        visitPlus((Plus)n.left); //traverse left-expression
+        visitPlus((Plus)n.right); //traverse right-expression
+        //emit code
+        code.emit(n, "lw $t0, ($sp)");
+        code.emit(n, "lw $t1, 8($sp)");
+        code.emit(n, "addu $t0, $t0, $t1");
+        code.emit(n, "addu $sp, $sp, 8");
+        code.emit(n, "sw $t0, ($sp)");
+        stackHeight = stackHeight - 8; //subtract 8 from stackHeight
+	    return null;
+    }
+
+    @Override
+    public Object visitMinus(Minus n) {
+        visitMinus((Minus)n.left); //traverse left-expression
+        visitMinus((Minus)n.right); //traverse right-expression
+        //emit code
+        code.emit(n, "lw $t0, ($sp)");
+        code.emit(n, "lw $t1, 8($sp)");
+        code.emit(n, "subu $t0, $t0, $t1");
+        code.emit(n, "subu $sp, $sp, 8");
+        code.emit(n, "sw $t0, ($sp)");
+        stackHeight = stackHeight - 8; //subtract 8 from stackHeight
+        return null;
     }
 
     @Override
@@ -211,7 +234,7 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitProgram(Program n) {
         code.emit(n, " .text");
-        code.emit(n,  "main:"); // main label
+        code.emit(n, "main:"); // main label
         // for not, just emit code to exit cleanly
         code.emit(n, " li $v0,10");
         code.emit(n, " syscall");
@@ -219,8 +242,8 @@ public class CG3Visitor extends ASTvisitor {
         // For Part A of Assignment 5 (when we are not generating vtables), define dummy
         // labels that are referenced in mjLib.asm.
         // ****** the
-        code.emit(n,  "CLASS_String:");
-        code.emit(n,  "dataArrayVTableStart:");
+        code.emit(n, "CLASS_String:");
+        code.emit(n, "dataArrayVTableStart:");
         return null;
     }
 }
