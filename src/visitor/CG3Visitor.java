@@ -314,7 +314,7 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitCast(Cast n) {
         n.exp.accept(this);
-        if (n.type.getClass().equals(n.castType.getClass().getGenericSuperclass())) { //might be a bug
+        if (n.type.getClass().equals(n.castType.getClass().getGenericSuperclass())) { // this might be a buggy expression
             code.emit(n, "la $t0,CLASS_"+CG1Visitor.vtableNameFor(n.type));
             code.emit(n, "la $t1,END_CLASS_"+CG1Visitor.vtableNameFor(n.type));
             code.emit(n, "jal checkCast");
