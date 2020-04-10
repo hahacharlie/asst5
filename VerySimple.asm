@@ -1,10 +1,10 @@
- .data # Program at 3.1	 	
- .text # Program at 3.1 	
-main: # Program at 3.1		
- li $v0,10 # Program at 3.1			
- syscall # Program at 3.1		
-CLASS_String: # Program at 3.1	 
-dataArrayVTableStart: # Program at 3.1 		
+ .data # Program at 3.1  	
+ .text # Program at 3.1  
+main: # Program at 3.1	  
+ li $v0,10 # Program at 3.1 
+ syscall # Program at 3.1 	
+CLASS_String: # Program at 3.1 	 
+dataArrayVTableStart: # Program at 3.1 	
 ##############################################################
 # MiniJava/UP library for MIPS/Spim -- version that assumes
 #    one-word boolean on stack
