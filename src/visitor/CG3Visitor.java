@@ -599,6 +599,7 @@ public class CG3Visitor extends ASTvisitor {
             all parameters, plus space for saved this-pointer (4),
             minus space for return-value (4 or 8) */
         int RRR = stackHeight + SSS + TTT;
+
         if (n.rtnType instanceof IntegerType) {
             RRR += 8;
         } else {
