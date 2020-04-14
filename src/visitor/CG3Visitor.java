@@ -614,7 +614,13 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitProgram(Program n) {
         code.emit(n, " .text");
+        code.emit(n, ".globl main");
         code.emit(n, "main:"); // main label
+        code.emit(n, "# initialize registers, etc.");
+        code.emit(n, "jal vm_init");
+        stackHeight = 0;
+        n.mainStatement.accept(this);
+        code.emit(n, "# exit program");
         // for now, just emit code to exit cleanly
         code.emit(n, " li $v0,10");
         code.emit(n, " syscall");
@@ -623,7 +629,9 @@ public class CG3Visitor extends ASTvisitor {
         // labels that are referenced in mjLib.asm.
         // ****** the
         code.emit(n, "CLASS_String:");
+        n.classDecls.accept(this);
         code.emit(n, "dataArrayVTableStart:");
+        code.flush();
         return null;
     }
 }
