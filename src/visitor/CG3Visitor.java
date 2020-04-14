@@ -9,36 +9,36 @@ import java.io.*;
 
 public class CG3Visitor extends ASTvisitor {
 
-	// the purpose here is to annotate things with their offsets:
-	// - formal parameters, with respect to the (callee) frame
-	// - local variables, with respect to the frame
-	// - instance variables, with respect to their slot in the object
-	// - methods, with respect to their slot in the v-table
-	// - while statements, with respect to the stack-size at the time
-	//   of loop-exit
-	
-	// error message object
-	private ErrorMsg errorMsg;
-	
-	// IO stream to which we will emit code
-	private CodeStream code;
+    // the purpose here is to annotate things with their offsets:
+    // - formal parameters, with respect to the (callee) frame
+    // - local variables, with respect to the frame
+    // - instance variables, with respect to their slot in the object
+    // - methods, with respect to their slot in the v-table
+    // - while statements, with respect to the stack-size at the time
+    //   of loop-exit
 
-	// current stack height
-	private int stackHeight;
-	
-	// for constant evaluation
-	private ConstEvalVisitor conEvalVis;
-	
-	public CG3Visitor(ErrorMsg e, PrintStream out) {
-		initInstanceVars(e, out);
-		conEvalVis = new ConstEvalVisitor();
-	}
-	
-	private void initInstanceVars(ErrorMsg e, PrintStream out) {
-		errorMsg = e;
-		code = new CodeStream(out, errorMsg);
-		stackHeight = 0;
-	}
+    // error message object
+    private ErrorMsg errorMsg;
+
+    // IO stream to which we will emit code
+    private CodeStream code;
+
+    // current stack height
+    private int stackHeight;
+
+    // for constant evaluation
+    private ConstEvalVisitor conEvalVis;
+
+    public CG3Visitor(ErrorMsg e, PrintStream out) {
+        initInstanceVars(e, out);
+        conEvalVis = new ConstEvalVisitor();
+    }
+
+    private void initInstanceVars(ErrorMsg e, PrintStream out) {
+        errorMsg = e;
+        code = new CodeStream(out, errorMsg);
+        stackHeight = 0;
+    }
 
     @Override
     public Object visitIntegerLiteral(IntegerLiteral n) {
@@ -47,7 +47,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "sw $s5,4($sp)");
         code.emit(n,"li $t0,"+n.val);
         code.emit(n, "sw $t0,($sp)");
-	    return null;
+        return null;
     }
 
     @Override
@@ -55,7 +55,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n,"subu $sp,$sp,4");
         stackHeight -= 4;
         code.emit(n, "sw $zero,($sp)");
-	    return null;
+        return null;
     }
 
     @Override
@@ -64,7 +64,7 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight -= 4;
         code.emit(n, "li $t0,1");
         code.emit(n, "sw $t0,($sp)");
-	    return null;
+        return null;
     }
 
     @Override
@@ -72,7 +72,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n,"subu $sp,$sp,4");
         stackHeight -= 4;
         code.emit(n, "sw $zero,($sp)");
-	    return null;
+        return null;
     }
 
     @Override
@@ -81,7 +81,7 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight -= 4;
         code.emit(n, "la $t0,strLit_"+n.uniqueCgRep);
         code.emit(n, "sw $t0,($sp)");
-	    return null;
+        return null;
     }
 
     @Override
@@ -89,7 +89,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "subu $sp,$sp,4");
         stackHeight -= 4;
         code.emit(n, "sw $s2,($sp)");
-	    return null;
+        return null;
     }
 
     @Override
@@ -97,7 +97,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "subu $sp,$sp,4");
         stackHeight -= 4;
         code.emit(n, "sw $s2,($sp)");
-	    return null;
+        return null;
     }
 
     @Override
@@ -119,7 +119,7 @@ public class CG3Visitor extends ASTvisitor {
             stackHeight -= 4;
             code.emit(n, "sw $t0,($sp)");
         }
-	    return null;
+        return null;
     }
 
     @Override
@@ -128,7 +128,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "lw $t0,($sp)");
         code.emit(n, "xor $t0,$t0,1");
         code.emit(n, "sw $t0,($sp)");
-	    return null;
+        return null;
     }
 
     @Override
@@ -142,7 +142,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "addu $sp,$sp,8");
         stackHeight -= 8; //subtract 8 from stackHeight
         code.emit(n, "sw $t0,($sp)");
-	    return null;
+        return null;
     }
 
     @Override
@@ -170,7 +170,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "addu $sp,$sp,8");
         stackHeight -= 8;
         code.emit(n, "sw $t0,($sp)");
-	    return null;
+        return null;
     }
 
     @Override
@@ -178,7 +178,7 @@ public class CG3Visitor extends ASTvisitor {
         n.left.accept(this);
         n.right.accept(this);
         code.emit(n, "jal divide");
-	    return null;
+        return null;
     }
 
     @Override
@@ -186,7 +186,7 @@ public class CG3Visitor extends ASTvisitor {
         n.left.accept(this);
         n.right.accept(this);
         code.emit(n, "jal remainder");
-	    return null;
+        return null;
     }
 
     @Override
@@ -208,7 +208,7 @@ public class CG3Visitor extends ASTvisitor {
             stackHeight -= 4;
             code.emit(n, "sw $t0,($sp)");
         }
-	    return null;
+        return null;
     }
 
     @Override
@@ -221,7 +221,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "addu $sp,$sp,12");
         stackHeight -= 12;
         code.emit(n, "sw $t0,($sp)");
-	    return null;
+        return null;
     }
 
     @Override
@@ -233,7 +233,7 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight -= 4;
         n.right.accept(this);
         code.emit(n, "skip_"+n.uniqueId+":");
-	    return null;
+        return null;
     }
 
     @Override
@@ -245,7 +245,7 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight -= 4;
         n.right.accept(this);
         code.emit(n, "skip_"+n.uniqueId+":");
-	    return null;
+        return null;
     }
 
     @Override
@@ -258,13 +258,13 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "subu $sp,4");
         stackHeight -= 4;
         code.emit(n, "sw $t0,($sp)");
-	    return null;
+        return null;
     }
 
     @Override
     public Object visitArrayLookup(ArrayLookup n) {
-	    n.arrExp.accept(this);
-	    n.idxExp.accept(this);
+        n.arrExp.accept(this);
+        n.idxExp.accept(this);
         code.emit(n, "lw $t0,8($sp)");
         code.emit(n, "beq $t0,$zero,nullPtrException");
         code.emit(n, "lw $t1,-4($t0)");
@@ -301,7 +301,7 @@ public class CG3Visitor extends ASTvisitor {
         } else {
             code.emit(n, "sw $t0,($sp)");
         }
-	    return null;
+        return null;
     }
 
     @Override
@@ -310,7 +310,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "la $t0,CLASS_"+CG1Visitor.vtableNameFor(n.type));
         code.emit(n, "la $t1,END_CLASS_"+CG1Visitor.vtableNameFor(n.type));
         code.emit(n, "jal instanceOf");
-	    return null;
+        return null;
     }
 
     @Override
@@ -321,7 +321,7 @@ public class CG3Visitor extends ASTvisitor {
             code.emit(n, "la $t1,END_CLASS_"+CG1Visitor.vtableNameFor(n.type));
             code.emit(n, "jal checkCast");
         }
-	    return null;
+        return null;
     }
 
     @Override
@@ -334,7 +334,7 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight -= 16; //1 word is 16 bits?
         code.emit(n, "la $t0,CLASS_"+n.objType.name);
         code.emit(n, "sw $t0,-12($s7)");
-	    return null;
+        return null;
     }
 
     @Override
@@ -348,12 +348,12 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight -= 16; //1 word is 16 bits?
         code.emit(n, "la $t0,CLASS_"+CG1Visitor.vtableNameFor(n.objType));
         code.emit(n, "sw $t0,-12($s7)");
-	    return null;
+        return null;
     }
 
     @Override
     public Object visitCall(Call n) { // TODO: Check for bugs
-	    if (n.obj.type.toString().equals("Super")) {
+        if (n.obj.type.toString().equals("Super")) {
             int oldStackHeight = stackHeight;
             n.obj.accept(this);
             n.parms.accept(this);
@@ -391,14 +391,14 @@ public class CG3Visitor extends ASTvisitor {
                 stackHeight = oldStackHeight + 4;
             }
         }
-	    return null;
+        return null;
     }
 
     @Override
     public Object visitLocalVarDecl(LocalVarDecl n) {
         n.initExp.accept(this);
         n.offset = -stackHeight;
-	    return null;
+        return null;
     }
 
     @Override
@@ -411,7 +411,7 @@ public class CG3Visitor extends ASTvisitor {
             code.emit(n, "addu $sp,$sp,4");
             stackHeight -= 4;
         }
-	    return null;
+        return null;
     }
 
     @Override
@@ -423,7 +423,7 @@ public class CG3Visitor extends ASTvisitor {
             code.emit(n, "addu $sp,"+DDD);
         }
         stackHeight = oldStackHeight;
-	    return null;
+        return null;
     }
 
     @Override
@@ -438,7 +438,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "if_else_"+n.uniqueId+":");
         n.falseStmt.accept(this);
         code.emit(n, "if_done_"+n.uniqueId+":");
-	    return null;
+        return null;
     }
 
     @Override
@@ -454,7 +454,7 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight -= 4;
         code.emit(n, "bne $t0,$zero,while_top_"+n.uniqueId);
         code.emit(n, "break_target_"+n.uniqueId+":");
-	    return null;
+        return null;
     }
 
     @Override
@@ -464,7 +464,7 @@ public class CG3Visitor extends ASTvisitor {
             code.emit(n, "addu $sp,"+diff);
         }
         code.emit(n, "j break_target_"+n.uniqueId);
-	    return null;
+        return null;
     }
 
     @Override
@@ -534,14 +534,14 @@ public class CG3Visitor extends ASTvisitor {
                 stackHeight -= 16;
             }
         }
-	    return null;
+        return null;
     }
 
     @Override
     public Object visitLabel(Label n) {
         stackHeight = n.enclosingSwitch.stackHeight;
         code.emit(n, "case_label_"+n.uniqueId);
-	    return null;
+        return null;
     }
 
     @Override
@@ -556,12 +556,12 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "subu $sp,$sp,4");
         code.emit(n, "sw $s2,($sp)");
         int NNN = 4; //TODO: determine stack-top-relative location of method’s this-pointer: object’s thisPointerOffset (part A leave it as 4)
-	    code.emit(n, "lw $s2,"+NNN+"($sp)");
-	    code.emit(n, "sw $ra,"+NNN+"($sp)");
-	    stackHeight = 0;
-	    n.stmts.accept(this); // generate code for the method's body
-        int PPP = 4; /* TODO: determine offset of saved return address (says, PPP) */
-        int QQQ = 4; /* TODO: determine offset of saved this-pointer (says, QQQ) relative to current stack height */
+        code.emit(n, "lw $s2,"+NNN+"($sp)");
+        code.emit(n, "sw $ra,"+NNN+"($sp)");
+        stackHeight = 0;
+        n.stmts.accept(this); // generate code for the method's body
+        int PPP = n.formals.size()+4;; /* TODO: determine offset of saved return address (says, PPP) */
+        int QQQ = n.formals.size()+8; /* TODO: determine offset of saved this-pointer (says, QQQ) relative to current stack height */
         code.emit(n, "lw $ra,"+PPP+"($sp)");
         code.emit(n, "lw $r2,"+QQQ+"($sp)");
         int RRR = stackHeight + PPP + QQQ;
@@ -582,8 +582,8 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight = 0;
         n.stmts.accept(this);
         n.rtnExp.accept(this);
-        int PPP = 4; /* TODO: determine offset of saved return address (says, PPP) */
-        int QQQ = 4; /* TODO: determine offset of saved this-pointer (says, QQQ) relative to current stack height */
+        int PPP = n.formals.size()+4; /* TODO: determine offset of saved return address (says, PPP) */
+        int QQQ = n.formals.size()+8; /* TODO: determine offset of saved this-pointer (says, QQQ) relative to current stack height */
         code.emit(n, "lw $ra,"+PPP+"($sp)");
         code.emit(n, "lw $r2,"+QQQ+"($sp)");
         int SSS = 4;
@@ -608,19 +608,13 @@ public class CG3Visitor extends ASTvisitor {
 
         code.emit(n, "addu $sp,$sp,"+ RRR);
         code.emit(n, "jr $ra");
-	    return null;
+        return null;
     }
 
     @Override
     public Object visitProgram(Program n) {
         code.emit(n, " .text");
-        code.emit(n, ".globl main");
         code.emit(n, "main:"); // main label
-        code.emit(n, "# initialize registers, etc.");
-        code.emit(n, "jal vm_init");
-        stackHeight = 0;
-        n.mainStatement.accept(this);
-        code.emit(n, "# exit program");
         // for now, just emit code to exit cleanly
         code.emit(n, " li $v0,10");
         code.emit(n, " syscall");
@@ -629,12 +623,7 @@ public class CG3Visitor extends ASTvisitor {
         // labels that are referenced in mjLib.asm.
         // ****** the
         code.emit(n, "CLASS_String:");
-        n.classDecls.accept(this);
         code.emit(n, "dataArrayVTableStart:");
-        code.flush();
         return null;
     }
 }
-
-
-	
