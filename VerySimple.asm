@@ -1,43 +1,10 @@
- .data # Program at 3.1	 	
- .text # Program at 3.1			
-.globl main # Program at 3.1 		
-main: # Program at 3.1  
-# initialize registers, etc. # Program at 3.1 		
-jal vm_init # Program at 3.1		 
-li $s6,1 # NewObject at 0.0 	 
-li $s7,0 # NewObject at 0.0  
-jal newObject # NewObject at 0.0   
-la $t0,CLASS_Main # NewObject at 0.0 	
-sw $t0,-12($s7) # NewObject at 0.0   
-lw $t0,-12($t0) # Call at 0.0 	 
-lw $t0,0($t0) # Call at 0.0 	
-jalr $t0 # Call at 0.0		
-addu $sp,$sp,4 # CallStatement at 0.0	
-# exit program # Program at 3.1 		
- li $v0,10 # Program at 3.1 	
- syscall # Program at 3.1	 	
-CLASS_String: # Program at 3.1	  
-.globl fcn_4_main # MethodDeclVoid at 4.17	 
-fcn_4_main: # MethodDeclVoid at 4.17  
-subu $sp,$sp,4 # MethodDeclVoid at 4.17	 
-sw $s2,($sp) # MethodDeclVoid at 4.17 	 
-lw $s2,4($sp) # MethodDeclVoid at 4.17		 
-sw $ra,4($sp) # MethodDeclVoid at 4.17 
-subu $sp,$sp,4 # Super at 5.8  	
-sw $s2,($sp) # Super at 5.8	 
-subu $sp,$sp,8 # IntegerLiteral at 5.17		 
-sw $s5,4($sp) # IntegerLiteral at 5.17		
-li $t0,3 # IntegerLiteral at 5.17	 	
-sw $t0,($sp) # IntegerLiteral at 5.17		
-lw $t0,-12($t0) # Call at 5.8 	
-lw $t0,0($t0) # Call at 5.8	
-jalr $t0 # Call at 5.8		 
-addu $sp,$sp,4 # CallStatement at 5.8   
-lw $ra,4($sp) # MethodDeclVoid at 4.17 
-lw $r2,8($sp) # MethodDeclVoid at 4.17		
-addu $sp,$sp,12 # MethodDeclVoid at 4.17 	
-jr $ra # MethodDeclVoid at 4.17 
-dataArrayVTableStart: # Program at 3.1	
+ .data # Program at 3.1  	
+ .text # Program at 3.1  
+main: # Program at 3.1	  
+ li $v0,10 # Program at 3.1 
+ syscall # Program at 3.1 	
+CLASS_String: # Program at 3.1 	 
+dataArrayVTableStart: # Program at 3.1 	
 ##############################################################
 # MiniJava/UP library for MIPS/Spim -- version that assumes
 #    one-word boolean on stack
