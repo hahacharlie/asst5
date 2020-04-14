@@ -55,7 +55,7 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitNull(Null n) {
         code.emit(n,"subu $sp,$sp,4");
-        stackHeight -= 4;
+        stackHeight += 4;
         code.emit(n, "sw $zero,($sp)");
 	    return null;
     }
@@ -63,7 +63,7 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitTrue(True n) {
         code.emit(n, "subu $sp,$sp,4");
-        stackHeight -= 4;
+        stackHeight += 4;
         code.emit(n, "li $t0,1");
         code.emit(n, "sw $t0,($sp)");
 	    return null;
@@ -72,7 +72,7 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitFalse(False n) {
         code.emit(n,"subu $sp,$sp,4");
-        stackHeight -= 4;
+        stackHeight += 4;
         code.emit(n, "sw $zero,($sp)");
 	    return null;
     }
@@ -329,7 +329,7 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitCast(Cast n) {
         n.exp.accept(this);
-        if (n.type.getClass().equals(n.castType.getClass().getGenericSuperclass())) { /* TODO: This might be a buggy if statement */
+        if (n.type.getClass().equals(n.castType.getClass().getGenericSuperclass())) {
             code.emit(n, "la $t0,CLASS_"+CG1Visitor.vtableNameFor(n.type));
             code.emit(n, "la $t1,END_CLASS_"+CG1Visitor.vtableNameFor(n.type));
             code.emit(n, "jal checkCast");
@@ -365,7 +365,7 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
-    public Object visitCall(Call n) { // TODO: Check for bugs
+    public Object visitCall(Call n) {
         code.emit(n, "# stackHeight equals: "+stackHeight);
 	    if (true || n.obj.type.toString().equals("Super")) {
             int oldStackHeight = stackHeight;
@@ -567,7 +567,7 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
-    public Object visitSwitch(Switch n) { /* TODO: visitSwitch */
+    public Object visitSwitch(Switch n) {
         return super.visitSwitch(n);
     }
 
@@ -578,13 +578,13 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "subu $sp,$sp,4");
         stackHeight += 4;
         code.emit(n, "sw $s2,($sp)");
-        int NNN = 4; //TODO: determine stack-top-relative location of method’s this-pointer: object’s thisPointerOffset (part A leave it as 4)
+        int NNN = 4;
         code.emit(n, "lw $s2,"+NNN+"($sp)");
         code.emit(n, "sw $ra,"+NNN+"($sp)");
         stackHeight = 0;
         n.stmts.accept(this); // generate code for the method's body
-        int PPP = stackHeight+4;; /* TODO: determine offset of saved return address (says, PPP) */
-        int QQQ = stackHeight; /* TODO: determine offset of saved this-pointer (says, QQQ) relative to current stack height */
+        int PPP = stackHeight+4;
+        int QQQ = stackHeight;
         code.emit(n, "lw $ra,"+PPP+"($sp)");
         code.emit(n, "lw $s2,"+QQQ+"($sp)");
         int RRR = stackHeight + PPP + QQQ;
@@ -600,14 +600,14 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "subu $sp,$sp,4");
         stackHeight += 4;
         code.emit(n, "sw $s2,($sp)");
-        int NNN = 4; /*TODO: determine stack-top-relative location of method’s this-pointer: object’s thisPointerOffset (part A leave it as 4)*/
+        int NNN = 4;
         code.emit(n, "lw $s2,"+NNN+"($sp)");
         code.emit(n, "sw $ra,"+NNN+"($sp)");
         stackHeight = 0;
         n.stmts.accept(this);
         n.rtnExp.accept(this);
-        int PPP = stackHeight+4; /* TODO: determine offset of saved return address (says, PPP) */
-        int QQQ = stackHeight; /* TODO: determine offset of saved this-pointer (says, QQQ) relative to current stack height */
+        int PPP = stackHeight+4;
+        int QQQ = stackHeight;
         code.emit(n, "lw $ra,"+PPP+"($sp)");
         code.emit(n, "lw $s2,"+QQQ+"($sp)");
         int SSS = 4;
@@ -617,19 +617,12 @@ public class CG3Visitor extends ASTvisitor {
         if (n.rtnType instanceof IntegerType) {
             code.emit(n, "sw $s5"+TTT+"($sp)");
         }
-
-        /* TODO: compute amount to pop stack (say, RRR):
-            current stack height, plus space for saved return address (4), plus space for
-            all parameters, plus space for saved this-pointer (4),
-            minus space for return-value (4 or 8) */
         int RRR = stackHeight + SSS + TTT;
-
         if (n.rtnType instanceof IntegerType) {
             RRR += 8;
         } else {
             RRR += 4;
         }
-
         code.emit(n, "addu $sp,$sp,"+ RRR);
         code.emit(n, "jr $ra");
         return null;
