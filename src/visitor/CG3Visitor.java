@@ -365,7 +365,7 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
-    public Object visitCall(Call n) {
+    public Object visitCall(Call n) { // TODO: Need change for part b.
         code.emit(n, "# stackHeight equals: "+stackHeight);
 	    if (true || n.obj.type.toString().equals("Super")) {
             int oldStackHeight = stackHeight;
@@ -572,7 +572,7 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
-    public Object visitMethodDecl(MethodDecl n) {
+    public Object visitMethodDecl(MethodDecl n) { //TODO: need change for part b.
         code.emit(n, ".globl fcn_"+n.uniqueId+"_"+n.name);
         code.emit(n, "fcn_"+n.uniqueId+"_"+n.name+":");
         code.emit(n, "subu $sp,$sp,4");
@@ -594,7 +594,7 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
-    public Object visitMethodDeclNonVoid(MethodDeclNonVoid n) {
+    public Object visitMethodDeclNonVoid(MethodDeclNonVoid n) { // TODO: need change for part b.
         code.emit(n, ".globl fcn_"+n.uniqueId+"_"+n.name);
         code.emit(n, "fcn_"+n.uniqueId+"_"+n.name+":");
         code.emit(n, "subu $sp,$sp,4");
@@ -629,7 +629,7 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
-    public Object visitProgram(Program n) {
+    public Object visitProgram(Program n) { //TODO: need change for part b.
         code.emit(n, " .text");
         code.emit(n, ".globl main");
         code.emit(n, "main:"); // main label

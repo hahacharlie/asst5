@@ -233,5 +233,42 @@ public class CG1Visitor extends ASTvisitor {
 
 		return null;
 	}
+
+	@Override
+	public Object visitInstVarDecl(InstVarDecl n) {
+		super.visitInstVarDecl(n);
+		if (n.type instanceof IntegerType || n.type instanceof BooleanType) {
+			n.offset = currentDataInstVarOffset;
+			currentDataInstVarOffset -= 4;
+		} else {
+			n.offset = currentObjInstVarOffset;
+			currentObjInstVarOffset += 4;
+		}
+		return null;
+	}
+
+	@Override
+	public Object visitFormalDecl(FormalDecl n) {
+		super.visitFormalDecl(n);
+		if (n.type instanceof IntegerType) {
+			currentFormalVarOffset -= 8;
+		} else {
+			currentFormalVarOffset -= 4;
+		}
+		n.offset = currentFormalVarOffset;
+		return null;
+	}
+
+	@Override
+	public Object visitArrayType(ArrayType n) {
+		arrayTypesInCode.add(n);
+		return null;
+	}
+
+	@Override
+	public Object visitNewArray(NewArray n) {
+		arrayTypesInCode.add(new ArrayType(n.pos, n.objType));
+		return null;
+	}
 }
 	
