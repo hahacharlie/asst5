@@ -48,7 +48,7 @@ public class CG2Visitor extends CG2VisitorSimple {
 		} else {
 			stringTable.put(sl.str, sl);
 			sl.uniqueCgRep = sl;
-			for (i=0; i<sl.str.length()-1; i++) {
+			for (int i=0; i<sl.str.length()-1; i++) {
 				//TODO: fill in:
 				// for each character in string, emit .byte N, where N is
 				// the integer code for the character (e.g., 32 for the space character)
