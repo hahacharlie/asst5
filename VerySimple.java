@@ -2,6 +2,6 @@
 // dispatch is not necessary
 class Main extends Lib {
     public void main() {
-	super.printInt(3);
+	    super.printInt(3);
     }
 }
