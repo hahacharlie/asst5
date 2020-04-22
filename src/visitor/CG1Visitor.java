@@ -217,7 +217,7 @@ public class CG1Visitor extends ASTvisitor {
 	public Object visitMethodDecl(MethodDecl md){
 		md.thisPtrOffset = 4 * (1 + md.formals.size());
 		currentFormalVarOffset = md.thisPtrOffset;
-		super.visit(md);
+		super.visitMethodDecl(md);
 
 		if(md.superMethod != null){
 			md.vtableOffset = md.superMethod.vtableOffset;
