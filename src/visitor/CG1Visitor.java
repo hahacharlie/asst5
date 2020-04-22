@@ -166,6 +166,12 @@ public class CG1Visitor extends ASTvisitor {
 	////************** END STARTER-FILE ALREADY-IMPLEMENETED HELPER-METHODS *************
 
 	////********* THE CS 358 STUDENT'S CODE (VISITORS AND HELPER METHODS) SHOULD STARTER HERE
+
+	private void registerMethodInTable(MethodDecl md, String label){
+		currentMethodTable.ensureCapacity(md.vtableOffset);
+		currentMethodTable.add(md.vtableOffset, label);
+	}
+
 	@Override
 	public Object visitProgram(Program p) {
 		code.emit(p, ".data");
@@ -210,7 +216,21 @@ public class CG1Visitor extends ASTvisitor {
 	@Override
 	public Object visitMethodDecl(MethodDecl md){
 		md.thisPtrOffset = 4 * (1 + md.formals.size());
-		//TODO: this is not done
+		currentFormalVarOffset = md.thisPtrOffset;
+		super.visit(md);
+
+		if(md.superMethod != null){
+			md.vtableOffset = md.superMethod.vtableOffset;
+		} else {
+			md.vtableOffset = currentMethodOffset++;
+		}
+
+		if(md.pos < 0){
+			registerMethodInTable(md, md.name + "_" + md.classDecl.name);
+		} else {
+			registerMethodInTable(md, "fcn_" + md.uniqueId + "_" + md.name);
+		}
+
 		return null;
 	}
 }
