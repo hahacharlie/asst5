@@ -250,10 +250,10 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
-    public Object visitOr(Or n) { // Further Inspection needed.
+    public Object visitOr(Or n) { // TODO: Further Inspection needed.
         n.left.accept(this);
         code.emit(n, "lw $t0,($sp)");
-        code.emit(n, "beq $t0,$zero,skip_"+n.uniqueId);
+        code.emit(n, "bne $t0,$zero,skip_"+n.uniqueId);
         code.emit(n, "addu $sp,$sp,4");
         stackHeight -= 4;
         n.right.accept(this);
