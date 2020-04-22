@@ -359,7 +359,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "li $s6,1");
         code.emit(n, "jal newObject");
         stackHeight -= 4;
-        code.emit(n, "la $t0,CLASS_"+CG1Visitor.vtableNameFor(n.objType));
+        code.emit(n, "la $t0,CLASS_"+CG1Visitor.vtableNameFor(n.type));
         code.emit(n, "sw $t0,-12($s7)");
 	    return null;
     }
@@ -583,11 +583,11 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "sw $ra,"+NNN+"($sp)");
         stackHeight = 0;
         n.stmts.accept(this); // generate code for the method's body
-        int PPP = stackHeight+4;
+        int PPP = stackHeight+n.thisPtrOffset;
         int QQQ = stackHeight;
         code.emit(n, "lw $ra,"+PPP+"($sp)");
         code.emit(n, "lw $s2,"+QQQ+"($sp)");
-        int RRR = stackHeight + PPP + QQQ;
+        int RRR = stackHeight + 4 + 4;
         code.emit(n, "addu $sp,$sp,"+RRR);
         code.emit(n, "jr $ra");
         return null;
