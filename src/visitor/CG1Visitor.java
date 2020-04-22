@@ -166,5 +166,52 @@ public class CG1Visitor extends ASTvisitor {
 	////************** END STARTER-FILE ALREADY-IMPLEMENETED HELPER-METHODS *************
 
 	////********* THE CS 358 STUDENT'S CODE (VISITORS AND HELPER METHODS) SHOULD STARTER HERE
+	@Override
+	public Object visitProgram(Program p) {
+		code.emit(p, ".data");
+		ClassDecl startingClass = p.classDecls.elementAt(0);
+		ClassDecl cur = startingClass;
+		while (cur.superLink != null) {
+			cur = cur.superLink;
+		}
+		cur.accept(this);
+		code.flush();
+		return null;
+	}
+	@Override
+	public Object visitClassDecl(ClassDecl cd) {
+		currentMethodTable = (ArrayList<String>) (superclassMethodTables.peek().clone());
+		if (cd.superLink == null) {
+			currentMethodOffset = 0;
+			currentDataInstVarOffset = -16;
+			currentObjInstVarOffset = 0;
+		} else {
+			currentMethodOffset = superclassMethodTables.size();
+			currentDataInstVarOffset = cd.superLink.numDataInstVars;
+			currentObjInstVarOffset = cd.superLink.numObjInstVars;
+		}
+		super.visitClassDecl(cd);
+		cd.numDataInstVars = (-16 - currentDataInstVarOffset) / 4;
+		cd.numObjInstVars = currentObjInstVarOffset / 4;
+		emitPrintStringNameFor(cd);
+		code.emit(cd, "CLASS_" + cd.name);
+		for (String m : currentMethodTable) {
+			code.emit(cd, ".word " + m);
+		}
+		superclassMethodTables.push(currentMethodTable);
+		cd.subclasses.accept(this);
+		if (cd.name.equals("Object")) {
+			emitArrayTypeVtables();
+		}
+		superclassMethodTables.pop();
+		code.emit(cd, "END_CLASS_" + cd.name);
+		return null;
+	}
+	@Override
+	public Object visitMethodDecl(MethodDecl md){
+		md.thisPtrOffset = 4 * (1 + md.formals.size());
+		//TODO: this is not done
+		return null;
+	}
 }
 	
