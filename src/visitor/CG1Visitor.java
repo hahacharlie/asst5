@@ -213,6 +213,7 @@ public class CG1Visitor extends ASTvisitor {
 		code.emit(cd, "END_CLASS_" + cd.name);
 		return null;
 	}
+
 	@Override
 	public Object visitMethodDecl(MethodDecl md){
 		md.thisPtrOffset = 4 * (1 + md.formals.size());

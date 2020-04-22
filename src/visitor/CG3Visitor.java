@@ -344,8 +344,8 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "li $s6,"+numOfDataInstVar);
         code.emit(n, "li $s7,"+numOfObjInstVar);
         code.emit(n, "jal newObject");
-        stackHeight -= 16; //1 word is 16 bits?
-        //code.emit(n, "la $t0,CLASS_"+n.objType.name);
+        stackHeight -= 4;
+        code.emit(n, "la $t0,CLASS_"+n.objType.name);
         code.emit(n, "sw $t0,-12($s7)");
 	    return null;
     }
@@ -358,16 +358,16 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight -= 8;
         code.emit(n, "li $s6,1");
         code.emit(n, "jal newObject");
-        stackHeight -= 16; //1 word is 16 bits?
+        stackHeight -= 4;
         code.emit(n, "la $t0,CLASS_"+CG1Visitor.vtableNameFor(n.objType));
         code.emit(n, "sw $t0,-12($s7)");
 	    return null;
     }
 
     @Override
-    public Object visitCall(Call n) { // TODO: Need change for part b.
+    public Object visitCall(Call n) {
         code.emit(n, "# stackHeight equals: "+stackHeight);
-	    if (true || n.obj.type.toString().equals("Super")) {
+	    if (n.obj.type.toString().equals("Super")) {
             int oldStackHeight = stackHeight;
             //code.emit(n, "# old stackHeight equals: "+oldStackHeight);
             n.obj.accept(this);
@@ -410,7 +410,7 @@ public class CG3Visitor extends ASTvisitor {
                 stackHeight = oldStackHeight + 4;
             }
         }
-        code.emit(n, "# stackHeight equals: "+stackHeight);
+        //code.emit(n, "# stackHeight equals: "+stackHeight);
 	    return null;
     }
 
@@ -424,7 +424,7 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitCallStatement(CallStatement n) {
         n.callExp.accept(this);
-        code.emit(n, "# stackHeight equals: "+stackHeight);
+        //code.emit(n, "# stackHeight equals: "+stackHeight);
         if (n.callExp.type instanceof IntegerType) {
             code.emit(n, "addu $sp,$sp,8");
             stackHeight -= 8;
@@ -432,7 +432,7 @@ public class CG3Visitor extends ASTvisitor {
             code.emit(n, "addu $sp,$sp,4");
             stackHeight -= 4;
         }
-        code.emit(n, "# stackHeight equals: "+stackHeight);
+        //code.emit(n, "# stackHeight equals: "+stackHeight);
 	    return null;
     }
 
@@ -572,13 +572,13 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
-    public Object visitMethodDecl(MethodDecl n) { //TODO: need change for part b.
+    public Object visitMethodDeclVoid(MethodDeclVoid n) {
         code.emit(n, ".globl fcn_"+n.uniqueId+"_"+n.name);
         code.emit(n, "fcn_"+n.uniqueId+"_"+n.name+":");
         code.emit(n, "subu $sp,$sp,4");
         stackHeight += 4;
         code.emit(n, "sw $s2,($sp)");
-        int NNN = 4;
+        int NNN = n.thisPtrOffset;
         code.emit(n, "lw $s2,"+NNN+"($sp)");
         code.emit(n, "sw $ra,"+NNN+"($sp)");
         stackHeight = 0;
@@ -594,20 +594,20 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
-    public Object visitMethodDeclNonVoid(MethodDeclNonVoid n) { // TODO: need change for part b.
+    public Object visitMethodDeclNonVoid(MethodDeclNonVoid n) {
         code.emit(n, ".globl fcn_"+n.uniqueId+"_"+n.name);
         code.emit(n, "fcn_"+n.uniqueId+"_"+n.name+":");
         code.emit(n, "subu $sp,$sp,4");
         stackHeight += 4;
         code.emit(n, "sw $s2,($sp)");
-        int NNN = 4;
+        int NNN = n.thisPtrOffset;
         code.emit(n, "lw $s2,"+NNN+"($sp)");
         code.emit(n, "sw $ra,"+NNN+"($sp)");
         stackHeight = 0;
         n.stmts.accept(this);
         n.rtnExp.accept(this);
-        int PPP = stackHeight+4;
-        int QQQ = stackHeight;
+        int PPP = stackHeight+n.thisPtrOffset+4;
+        int QQQ = stackHeight+n.thisPtrOffset;
         code.emit(n, "lw $ra,"+PPP+"($sp)");
         code.emit(n, "lw $s2,"+QQQ+"($sp)");
         int SSS = 4;
@@ -629,7 +629,7 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
-    public Object visitProgram(Program n) { //TODO: need change for part b.
+    public Object visitProgram(Program n) {
         code.emit(n, " .text");
         code.emit(n, ".globl main");
         code.emit(n, "main:"); // main label
@@ -645,10 +645,11 @@ public class CG3Visitor extends ASTvisitor {
         // For Part A of Assignment 5 (when we are not generating vtables), define dummy
         // labels that are referenced in mjLib.asm.
         // ****** the
-        code.emit(n, "CLASS_String:");
+       // code.emit(n, "CLASS_String:");
         n.classDecls.accept(this);
-        code.emit(n, "dataArrayVTableStart:");
+        //code.emit(n, "dataArrayVTableStart:");
         code.flush();
+        //code.emit(n, "# stackHeight equals: "+stackHeight);
         return null;
     }
 }
