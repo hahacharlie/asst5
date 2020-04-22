@@ -200,7 +200,7 @@ public class CG1Visitor extends ASTvisitor {
 		cd.numDataInstVars = (-16 - currentDataInstVarOffset) / 4;
 		cd.numObjInstVars = currentObjInstVarOffset / 4;
 		emitPrintStringNameFor(cd);
-		code.emit(cd, "CLASS_" + cd.name);
+		code.emit(cd, "CLASS_" + cd.name + ":");
 		for (String m : currentMethodTable) {
 			code.emit(cd, ".word " + m);
 		}
@@ -210,13 +210,16 @@ public class CG1Visitor extends ASTvisitor {
 			emitArrayTypeVtables();
 		}
 		superclassMethodTables.pop();
-		code.emit(cd, "END_CLASS_" + cd.name);
+		code.emit(cd, "END_CLASS_" + cd.name + ":");
 		return null;
 	}
 
 	@Override
 	public Object visitMethodDecl(MethodDecl md){
-		md.thisPtrOffset = 4 * (1 + md.formals.size());
+
+		int numWordsFormals = md.formals.stream().mapToInt(formal -> formal.type instanceof IntegerType ? 2 : 1).sum();
+		md.thisPtrOffset = 4 * (1 + numWordsFormals);
+
 		currentFormalVarOffset = md.thisPtrOffset;
 		super.visitMethodDecl(md);
 

@@ -50,9 +50,9 @@ public class CG2Visitor extends CG2VisitorSimple {
 //			sl.uniqueCgRep = sl;
 //			for (int i=0; i<sl.str.length()-1; i++) {
 //				//TODO: fill in:
-//				// For each character in string, emit .byte N, where N is
+//				// for each character in string, emit .byte N, where N is
 //				// the integer code for the character (e.g., 32 for the space character)
-//				// Up to three .byte 0 directives in order to make the
+//				// up to three .byte 0 directives in order to make the
 //				// total number of .byte directives an even multiple of 4
 //			}
 //			code.emit(sl, ".word CLASS_String");
