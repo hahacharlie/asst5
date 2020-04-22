@@ -345,7 +345,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "li $s7,"+numOfObjInstVar);
         code.emit(n, "jal newObject");
         stackHeight -= 4;
-        code.emit(n, "la $t0,CLASS_"+n.objType.name);
+        code.emit(n, "la $t0,CLASS_"+n.objType.link.name);
         code.emit(n, "sw $t0,-12($s7)");
 	    return null;
     }

@@ -274,6 +274,5 @@ public class CG1Visitor extends ASTvisitor {
 		arrayTypesInCode.add(new ArrayType(n.pos, n.objType));
 		return null;
 	}
-
 }
 	

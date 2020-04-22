@@ -41,28 +41,32 @@ public class CG2Visitor extends CG2VisitorSimple {
 		stringTable = new Hashtable<String,StringLiteral>();	
 	}
 
-//	@Override
-//	public Object visitStringLiteral(StringLiteral sl) {
-//		if (stringTable.containsKey(sl.str)) {
-//			sl.uniqueCgRep = stringTable.get(sl.str);
-//		} else {
-//			stringTable.put(sl.str, sl);
-//			sl.uniqueCgRep = sl;
-//			for (int i=0; i<sl.str.length()-1; i++) {
-//				//TODO: fill in:
-//				// for each character in string, emit .byte N, where N is
-//				// the integer code for the character (e.g., 32 for the space character)
-//				// up to three .byte 0 directives in order to make the
-//				// total number of .byte directives an even multiple of 4
-//			}
-//			code.emit(sl, ".word CLASS_String");
-//			int characters = sl.str.length()/4+1;
-//			code.emit(sl, ".word "+characters);
-//			code.emit(sl, ".word "+"-"+sl.str.length());
-//			code.emit(sl, "strLit_"+sl.uniqueId);
-//		}
-//		return null;
-//	}
+	@Override
+	public Object visitStringLiteral(StringLiteral sl) {
+		if (stringTable.containsKey(sl.str)) {
+			sl.uniqueCgRep = stringTable.get(sl.str);
+		} else {
+			stringTable.put(sl.str, sl);
+			sl.uniqueCgRep = sl;
+			for (int i=0; i<sl.str.length()-1; i++) {
+				code.emit(sl, ".byte "+(int)sl.str.charAt(i));
+			}
+			// up to three .byte 0 directives in order to make the
+			// total number of .byte directives an even multiple of 4
+			int empties = sl.str.length()%4;
+			if (empties != 0) {
+				for (int i=0; i<empties; i++) {
+					code.emit(sl, ".byte 0");
+				}
+			}
+			code.emit(sl, ".word CLASS_String");
+			int characters = sl.str.length()/4+1;
+			code.emit(sl, ".word "+characters);
+			code.emit(sl, ".word "+"-"+sl.str.length());
+			code.emit(sl, "strLit_"+sl.uniqueId);
+		}
+		return null;
+	}
 }
 
 	
