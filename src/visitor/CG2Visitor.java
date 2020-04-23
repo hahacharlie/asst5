@@ -48,20 +48,20 @@ public class CG2Visitor extends CG2VisitorSimple {
 //		} else {
 //			stringTable.put(sl.str, sl);
 //			sl.uniqueCgRep = sl;
-//			for (int i=0; i<sl.str.length()-1; i++) {
-//				code.emit(sl, ".byte "+(int)sl.str.charAt(i));
+//			for (char i : sl.str.toCharArray()) {
+//				code.emit(sl, " .byte "+(int)i);
 //			}
-//			int empties = sl.str.length()%4;
-//			if (empties != 0) {
-//				for (int i=0; i<empties; i++) {
-//					code.emit(sl, ".byte 0");
-//				}
+//			int empties = sl.str.length() % 4;
+//			while (empties != 0) {
+//				code.emit(sl, " .byte 0");
+//				empties --;
 //			}
-//			code.emit(sl, ".word CLASS_String");
-//			int characters = sl.str.length()/4+1;
-//			code.emit(sl, ".word "+characters);
-//			code.emit(sl, ".word "+"-"+sl.str.length());
-//			code.emit(sl, "strLit_"+sl.uniqueId);
+//			code.emit(sl, " .word CLASS_String");
+//			int NN = sl.str.length()/4+1;
+//			code.emit(sl, " .word "+NN);
+//			int MM = sl.str.length();
+//			code.emit(sl, " .word "+"-"+MM);
+//			code.emit(sl, " strLit_"+sl.uniqueId+":");
 //		}
 //		return null;
 //	}

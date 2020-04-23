@@ -42,13 +42,11 @@ public class CG3Visitor extends ASTvisitor {
 
     @Override
     public Object visitIntegerLiteral(IntegerLiteral n) {
-        //code.emit(n, "# stackHeight equals: "+stackHeight);
 	    code.emit(n, "subu $sp,$sp,8");
         stackHeight += 8;
         code.emit(n, "sw $s5,4($sp)");
         code.emit(n,"li $t0,"+n.val);
         code.emit(n, "sw $t0,($sp)");
-        //code.emit(n, "# stackHeight equals: "+stackHeight);
 	    return null;
     }
 
@@ -79,12 +77,12 @@ public class CG3Visitor extends ASTvisitor {
 
     @Override
     public Object visitStringLiteral(StringLiteral n) {
-        //code.emit(n, "# stackHeight equals: "+stackHeight);
+        code.emit(n, "# Before StringLiteral stackHeight equals: "+stackHeight);
         code.emit(n, "subu $sp,$sp,4");
         stackHeight += 4;
         code.emit(n, "la $t0,strLit_"+n.uniqueCgRep.uniqueId);
         code.emit(n, "sw $t0,($sp)");
-        //code.emit(n, "# stackHeight equals: "+stackHeight);
+        code.emit(n, "# After StringLiteral stackHeight equals: "+stackHeight);
 	    return null;
     }
 
@@ -106,7 +104,7 @@ public class CG3Visitor extends ASTvisitor {
 
     @Override
     public Object visitIdentifierExp(IdentifierExp n) {
-        //code.emit(n, "# stackHeight equals: "+stackHeight);
+        code.emit(n, "# Before IdentifierExp stackHeight equals: "+stackHeight);
         if (n.link instanceof InstVarDecl) {
             code.emit(n, "lw $t0,"+n.link.offset+"($s2)");
         }else {
@@ -123,7 +121,7 @@ public class CG3Visitor extends ASTvisitor {
             stackHeight += 4;
             code.emit(n, "sw $t0,($sp)");
         }
-        //code.emit(n, "# stackHeight equals: "+stackHeight);
+        code.emit(n, "# After IdentifierExp stackHeight equals: "+stackHeight);
 	    return null;
     }
 
@@ -138,33 +136,33 @@ public class CG3Visitor extends ASTvisitor {
 
     @Override
     public Object visitPlus(Plus n) {
-        //code.emit(n, "# stackHeight equals: "+stackHeight);
+        code.emit(n, "# Before Plus stackHeight equals: "+stackHeight);
         n.left.accept(this);
         n.right.accept(this);
-        //code.emit(n, "# stackHeight equals: "+stackHeight);
+        code.emit(n, "# Plus two sides traverse stackHeight equals: "+stackHeight);
         code.emit(n, "lw $t0,($sp)");
         code.emit(n, "lw $t1,8($sp)");
         code.emit(n, "addu $t0,$t0,$t1");
         code.emit(n, "addu $sp,$sp,8");
         stackHeight -= 8;
         code.emit(n, "sw $t0,($sp)");
-        //code.emit(n, "# stackHeight equals: "+stackHeight);
+        code.emit(n, "# After Plus stackHeight equals: "+stackHeight);
 	    return null;
     }
 
     @Override
     public Object visitMinus(Minus n) {
-	    //code.emit(n, "# stackHeight equals: "+stackHeight);
+	    code.emit(n, "# Before Minus stackHeight equals: "+stackHeight);
         n.left.accept(this);
         n.right.accept(this);
-        //code.emit(n, "# stackHeight equals: "+stackHeight);
+        code.emit(n, "# sMinus two sides traverse tackHeight equals: "+stackHeight);
         code.emit(n, "lw $t0,($sp)");
         code.emit(n, "lw $t1,8($sp)");
         code.emit(n, "subu $t0,$t1,$t0");
         code.emit(n, "addu $sp,$sp,8");
         stackHeight -= 8;
         code.emit(n, "sw $t0,($sp)");
-        //code.emit(n, "# stackHeight equals: "+stackHeight);
+        code.emit(n, "# After Minus stackHeight equals: "+stackHeight);
         return null;
     }
 
@@ -335,7 +333,7 @@ public class CG3Visitor extends ASTvisitor {
 
     @Override
     public Object visitNewObject(NewObject n) {
-        code.emit(n, "# Before NewObject stackHeight equals: "+stackHeight);
+        //code.emit(n, "# Before NewObject stackHeight equals: "+stackHeight);
         int numOfObjInstVar = n.objType.link.numObjInstVars;
         int numOfDataInstVar = n.objType.link.numDataInstVars+1;
         code.emit(n, "li $s6,"+numOfDataInstVar);
@@ -344,7 +342,7 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight -= 4;
         code.emit(n, "la $t0,CLASS_"+n.objType.link.name);
         code.emit(n, "sw $t0,-12($s7)");
-        code.emit(n, "# After NewObject stackHeight equals: "+stackHeight);
+        //code.emit(n, "# After NewObject stackHeight equals: "+stackHeight);
 	    return null;
     }
 
@@ -368,7 +366,7 @@ public class CG3Visitor extends ASTvisitor {
     public Object visitCall(Call n) {
         // code.emit(n, "# Before call stackHeight equals: "+stackHeight);
 	    if (n.obj instanceof Super) {
-            code.emit(n, "# if call is super, start stackHeight equals: "+stackHeight);
+            //code.emit(n, "# if call is super, start stackHeight equals: "+stackHeight);
             int oldStackHeight = stackHeight;
             n.obj.accept(this);
             n.parms.accept(this);
@@ -385,7 +383,7 @@ public class CG3Visitor extends ASTvisitor {
                 stackHeight = oldStackHeight + 4;
             }
         } else {
-            code.emit(n, "# if call is not super start stackHeight equals: "+stackHeight);
+            //code.emit(n, "# if call is not super start stackHeight equals: "+stackHeight);
             int oldStackHeight = stackHeight;
             n.obj.accept(this);
             n.parms.accept(this);
@@ -404,7 +402,7 @@ public class CG3Visitor extends ASTvisitor {
                 stackHeight = oldStackHeight + 4;
             }
         }
-        code.emit(n, "# After Call stackHeight equals: "+stackHeight);
+        //code.emit(n, "# After Call stackHeight equals: "+stackHeight);
 	    return null;
     }
 
@@ -417,7 +415,7 @@ public class CG3Visitor extends ASTvisitor {
 
     @Override
     public Object visitCallStatement(CallStatement n) {
-        code.emit(n, "# Before CallStatement stackHeight equals: "+stackHeight);
+        //code.emit(n, "# Before CallStatement stackHeight equals: "+stackHeight);
         n.callExp.accept(this);
         if (n.callExp.type instanceof IntegerType) {
             code.emit(n, "addu $sp,$sp,8");
@@ -426,7 +424,7 @@ public class CG3Visitor extends ASTvisitor {
             code.emit(n, "addu $sp,$sp,4");
             stackHeight -= 4;
         }
-        code.emit(n, "# After CallStatement stackHeight equals: "+stackHeight);
+        //code.emit(n, "# After CallStatement stackHeight equals: "+stackHeight);
 	    return null;
     }
 
@@ -459,7 +457,7 @@ public class CG3Visitor extends ASTvisitor {
 
     @Override
     public Object visitWhile(While n) {
-        stackHeight = n.stackHeight;
+        n. stackHeight = stackHeight;
         code.emit(n, "j while_enter_"+n.uniqueId);
         code.emit(n, "while_top_"+n.uniqueId+":");
         n.body.accept(this);
@@ -526,13 +524,13 @@ public class CG3Visitor extends ASTvisitor {
             ((ArrayLookup) n.lhs).idxExp.accept(this);
             n.rhs.accept(this);
             code.emit(n, "lw $t0,($sp)");
-            if (n.lhs.type instanceof IntegerType) {
+            if (n.rhs.type instanceof IntegerType) {
                 code.emit(n, "lw $t1,16($sp)");
             } else {
                 code.emit(n, "lw $t1,12($sp)");
             }
             code.emit(n, "beq $t1,$zero,nullPtrException");
-            if (n.lhs.type instanceof IntegerType) {
+            if (n.rhs.type instanceof IntegerType) {
                 code.emit(n, "lw $t2,8($sp)");
             } else {
                 code.emit(n, "lw $t2,4($sp)");
@@ -542,7 +540,7 @@ public class CG3Visitor extends ASTvisitor {
             code.emit(n, "sll $t2,$t2,2");
             code.emit(n, "addu $t2,$t2,$t1");
             code.emit(n, "sw $t0,($t2)");
-            if (n.lhs.type instanceof IntegerType) {
+            if (n.rhs.type instanceof IntegerType) {
                 code.emit(n, "addu $sp,$sp,20");
                 stackHeight -= 20;
             } else {
