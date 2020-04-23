@@ -90,11 +90,9 @@ public class CG3Visitor extends ASTvisitor {
 
     @Override
     public Object visitThis(This n) {
-        //code.emit(n, "# stackHeight equals: "+stackHeight);
         code.emit(n, "subu $sp,$sp,4");
         stackHeight += 4;
         code.emit(n, "sw $s2,($sp)");
-        //code.emit(n, "# stackHeight equals: "+stackHeight);
 	    return null;
     }
 
@@ -141,15 +139,14 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitPlus(Plus n) {
         //code.emit(n, "# stackHeight equals: "+stackHeight);
-        n.left.accept(this); //traverse left-expression
-        n.right.accept(this); //traverse right-expression
-        //emit code
+        n.left.accept(this);
+        n.right.accept(this);
         //code.emit(n, "# stackHeight equals: "+stackHeight);
         code.emit(n, "lw $t0,($sp)");
         code.emit(n, "lw $t1,8($sp)");
         code.emit(n, "addu $t0,$t0,$t1");
         code.emit(n, "addu $sp,$sp,8");
-        stackHeight -= 8; //subtract 8 from stackHeight
+        stackHeight -= 8;
         code.emit(n, "sw $t0,($sp)");
         //code.emit(n, "# stackHeight equals: "+stackHeight);
 	    return null;
@@ -158,15 +155,14 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitMinus(Minus n) {
 	    //code.emit(n, "# stackHeight equals: "+stackHeight);
-        n.left.accept(this); //traverse left-expression
-        n.right.accept(this); //traverse right-expression
+        n.left.accept(this);
+        n.right.accept(this);
         //code.emit(n, "# stackHeight equals: "+stackHeight);
-        //emit code
         code.emit(n, "lw $t0,($sp)");
         code.emit(n, "lw $t1,8($sp)");
         code.emit(n, "subu $t0,$t1,$t0");
         code.emit(n, "addu $sp,$sp,8");
-        stackHeight -= 8; //subtract 8 from stackHeight
+        stackHeight -= 8;
         code.emit(n, "sw $t0,($sp)");
         //code.emit(n, "# stackHeight equals: "+stackHeight);
         return null;
@@ -339,6 +335,7 @@ public class CG3Visitor extends ASTvisitor {
 
     @Override
     public Object visitNewObject(NewObject n) {
+        code.emit(n, "# Before NewObject stackHeight equals: "+stackHeight);
         int numOfObjInstVar = n.objType.link.numObjInstVars;
         int numOfDataInstVar = n.objType.link.numDataInstVars+1;
         code.emit(n, "li $s6,"+numOfDataInstVar);
@@ -347,6 +344,7 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight -= 4;
         code.emit(n, "la $t0,CLASS_"+n.objType.link.name);
         code.emit(n, "sw $t0,-12($s7)");
+        code.emit(n, "# After NewObject stackHeight equals: "+stackHeight);
 	    return null;
     }
 
@@ -364,22 +362,21 @@ public class CG3Visitor extends ASTvisitor {
 	    return null;
     }
 
+
+
     @Override
     public Object visitCall(Call n) {
-        code.emit(n, "# stackHeight equals: "+stackHeight);
-	    if (n.obj.type.toString().equals("Super")) {
+        // code.emit(n, "# Before call stackHeight equals: "+stackHeight);
+	    if (n.obj instanceof Super) {
+            code.emit(n, "# if call is super, start stackHeight equals: "+stackHeight);
             int oldStackHeight = stackHeight;
-            //code.emit(n, "# old stackHeight equals: "+oldStackHeight);
             n.obj.accept(this);
-            //code.emit(n, "# stackHeight equals: "+stackHeight);
             n.parms.accept(this);
-            //code.emit(n, "# stackHeight equals: "+stackHeight);
             if (n.methodLink.pos < 0) {
                 code.emit(n, "jal "+n.methodLink.name+"_"+n.methodLink.classDecl.name);
             } else {
                 code.emit(n, "jal fcn_"+n.methodLink.uniqueId+"_"+n.methodLink.name);
             }
-            //code.emit(n, "# stackHeight equals: "+stackHeight);
             if (n.type instanceof IntegerType) {
                 stackHeight = oldStackHeight + 8;
             } else if (n.type instanceof VoidType) {
@@ -387,8 +384,8 @@ public class CG3Visitor extends ASTvisitor {
             } else {
                 stackHeight = oldStackHeight + 4;
             }
-            //code.emit(n, "# stackHeight equals: "+stackHeight);
         } else {
+            code.emit(n, "# if call is not super start stackHeight equals: "+stackHeight);
             int oldStackHeight = stackHeight;
             n.obj.accept(this);
             n.parms.accept(this);
@@ -407,7 +404,7 @@ public class CG3Visitor extends ASTvisitor {
                 stackHeight = oldStackHeight + 4;
             }
         }
-        //code.emit(n, "# stackHeight equals: "+stackHeight);
+        code.emit(n, "# After Call stackHeight equals: "+stackHeight);
 	    return null;
     }
 
@@ -420,8 +417,8 @@ public class CG3Visitor extends ASTvisitor {
 
     @Override
     public Object visitCallStatement(CallStatement n) {
+        code.emit(n, "# Before CallStatement stackHeight equals: "+stackHeight);
         n.callExp.accept(this);
-        //code.emit(n, "# stackHeight equals: "+stackHeight);
         if (n.callExp.type instanceof IntegerType) {
             code.emit(n, "addu $sp,$sp,8");
             stackHeight -= 8;
@@ -429,7 +426,7 @@ public class CG3Visitor extends ASTvisitor {
             code.emit(n, "addu $sp,$sp,4");
             stackHeight -= 4;
         }
-        //code.emit(n, "# stackHeight equals: "+stackHeight);
+        code.emit(n, "# After CallStatement stackHeight equals: "+stackHeight);
 	    return null;
     }
 
@@ -628,25 +625,19 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitProgram(Program n) {
         code.emit(n, " .text");
-        code.emit(n, ".globl main");
-        code.emit(n, "main:"); // main label
+        code.emit(n, " .globl main");
+        code.emit(n, "main:");
         code.emit(n, "# initialize registers, etc.");
         code.emit(n, "jal vm_init");
         stackHeight = 0;
         n.mainStatement.accept(this);
         code.emit(n, "# exit program");
-        // for now, just emit code to exit cleanly
         code.emit(n, " li $v0,10");
         code.emit(n, " syscall");
 
-        // For Part A of Assignment 5 (when we are not generating vtables), define dummy
-        // labels that are referenced in mjLib.asm.
-        // ****** the
-       // code.emit(n, "CLASS_String:");
         n.classDecls.accept(this);
-        //code.emit(n, "dataArrayVTableStart:");
         code.flush();
-        //code.emit(n, "# stackHeight equals: "+stackHeight);
+        code.emit(n, "# After Program stackHeight equals: "+stackHeight);
         return null;
     }
 }

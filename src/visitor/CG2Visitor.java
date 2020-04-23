@@ -51,8 +51,6 @@ public class CG2Visitor extends CG2VisitorSimple {
 			for (int i=0; i<sl.str.length()-1; i++) {
 				code.emit(sl, ".byte "+(int)sl.str.charAt(i));
 			}
-			// up to three .byte 0 directives in order to make the
-			// total number of .byte directives an even multiple of 4
 			int empties = sl.str.length()%4;
 			if (empties != 0) {
 				for (int i=0; i<empties; i++) {

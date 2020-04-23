@@ -175,8 +175,7 @@ public class CG1Visitor extends ASTvisitor {
 	@Override
 	public Object visitProgram(Program p) {
 		code.emit(p, ".data");
-		ClassDecl startingClass = p.classDecls.elementAt(0);
-		ClassDecl cur = startingClass;
+		ClassDecl cur = p.classDecls.elementAt(0);
 		while (cur.superLink != null) {
 			cur = cur.superLink;
 		}
@@ -184,17 +183,19 @@ public class CG1Visitor extends ASTvisitor {
 		code.flush();
 		return null;
 	}
+
 	@Override
 	public Object visitClassDecl(ClassDecl cd) {
-		currentMethodTable = (ArrayList<String>) (superclassMethodTables.peek().clone());
+		code.emit(cd, "# ****** class "+cd.name+" start ****** ");
+		currentMethodTable = superclassMethodTables.peek();
 		if (cd.superLink == null) {
 			currentMethodOffset = 0;
 			currentDataInstVarOffset = -16;
 			currentObjInstVarOffset = 0;
 		} else {
-			currentMethodOffset = superclassMethodTables.size();
-			currentDataInstVarOffset = cd.superLink.numDataInstVars;
-			currentObjInstVarOffset = cd.superLink.numObjInstVars;
+			currentMethodOffset = cd.superLink.methodTable.size();
+			currentDataInstVarOffset = -16 - 4*cd.superLink.numDataInstVars;
+			currentObjInstVarOffset = 4*cd.superLink.numObjInstVars;
 		}
 		super.visitClassDecl(cd);
 		cd.numDataInstVars = (-16 - currentDataInstVarOffset) / 4;
@@ -202,7 +203,7 @@ public class CG1Visitor extends ASTvisitor {
 		emitPrintStringNameFor(cd);
 		code.emit(cd, "CLASS_" + cd.name + ":");
 		for (String m : currentMethodTable) {
-			code.emit(cd, ".word " + m);
+			code.emit(cd, " .word " + m);
 		}
 		superclassMethodTables.push(currentMethodTable);
 		cd.subclasses.accept(this);
@@ -211,30 +212,29 @@ public class CG1Visitor extends ASTvisitor {
 		}
 		superclassMethodTables.pop();
 		code.emit(cd, "END_CLASS_" + cd.name + ":");
+		code.emit(cd, "# ****** class "+cd.name+" end ****** ");
 		return null;
 	}
 
 	@Override
 	public Object visitMethodDecl(MethodDecl md){
-
-		int numWordsFormals = md.formals.stream().mapToInt(formal -> formal.type instanceof IntegerType ? 2 : 1).sum();
+		code.emit(md, "# ****** method "+md.name+" start ****** ");
+		int numWordsFormals = md.formals.size();
 		md.thisPtrOffset = 4 * (1 + numWordsFormals);
-
 		currentFormalVarOffset = md.thisPtrOffset;
 		super.visitMethodDecl(md);
-
 		if(md.superMethod != null){
 			md.vtableOffset = md.superMethod.vtableOffset;
 		} else {
-			md.vtableOffset = currentMethodOffset++;
+			md.vtableOffset = currentMethodOffset;
+			currentMethodOffset++;
 		}
-
 		if(md.pos < 0){
 			registerMethodInTable(md, md.name + "_" + md.classDecl.name);
 		} else {
 			registerMethodInTable(md, "fcn_" + md.uniqueId + "_" + md.name);
 		}
-
+		code.emit(md, "# ****** method "+md.name+" end ****** ");
 		return null;
 	}
 
@@ -244,7 +244,7 @@ public class CG1Visitor extends ASTvisitor {
 		if (n.type instanceof IntegerType || n.type instanceof BooleanType) {
 			n.offset = currentDataInstVarOffset;
 			currentDataInstVarOffset -= 4;
-		} else {
+		} else /*if (!(n.type instanceof VoidType))*/ {
 			n.offset = currentObjInstVarOffset;
 			currentObjInstVarOffset += 4;
 		}
@@ -271,7 +271,7 @@ public class CG1Visitor extends ASTvisitor {
 
 	@Override
 	public Object visitNewArray(NewArray n) {
-		arrayTypesInCode.add(new ArrayType(n.pos, n.objType));
+		arrayTypesInCode.add(new ArrayType(n.pos, n.type));
 		return null;
 	}
 }
