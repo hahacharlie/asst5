@@ -694,9 +694,10 @@ public class CG3Visitor extends ASTvisitor {
         int SSS = 4;
         int TTT = 4;
         code.emit(n, "lw $t0,($sp)");
-        code.emit(n, "sw $t0,"+SSS+"($sp)");
         if (n.rtnType instanceof IntegerType) {
             code.emit(n, "sw $s5"+TTT+"($sp)");
+        } else {
+            code.emit(n, "sw $t0,"+SSS+"($sp)");
         }
         int RRR = stackHeight + SSS + TTT;
         if (n.rtnType instanceof IntegerType) {
