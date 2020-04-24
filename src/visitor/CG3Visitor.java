@@ -493,7 +493,7 @@ public class CG3Visitor extends ASTvisitor {
             code.emit(n, "addu $sp,"+diff);
         }
         code.emit(n, "j break_target_"+n.uniqueId);
-        //tackHeight -= diff;
+        //stackHeight -= diff;
 	    return null;
     }
 
@@ -590,13 +590,14 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, "lw $s2,"+NNN+"($sp)");
         code.emit(n, "sw $ra,"+NNN+"($sp)");
         stackHeight = 0;
-        n.stmts.accept(this); // generate code for the method's body
-        int PPP = stackHeight+n.thisPtrOffset;
-        int QQQ = stackHeight;
+        n.stmts.accept(this);
+        int PPP = stackHeight+n.thisPtrOffset; // saved return address offset
+        int QQQ = stackHeight; // saved this-pointer offset
         code.emit(n, "lw $ra,"+PPP+"($sp)");
         code.emit(n, "lw $s2,"+QQQ+"($sp)");
-        int RRR = stackHeight + 4 + 4;
+        int RRR = stackHeight + n.thisPtrOffset +4;
         code.emit(n, "addu $sp,$sp,"+RRR);
+        stackHeight -= RRR;
         code.emit(n, "jr $ra");
         return null;
     }
@@ -614,22 +615,23 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight = 0;
         n.stmts.accept(this);
         n.rtnExp.accept(this);
-        int PPP = stackHeight+n.thisPtrOffset+4;
-        int QQQ = stackHeight+n.thisPtrOffset;
+        int PPP = stackHeight+n.thisPtrOffset; // saved return address offset
+        int QQQ = stackHeight; // save this-pointer offset
         code.emit(n, "lw $ra,"+PPP+"($sp)");
         code.emit(n, "lw $s2,"+QQQ+"($sp)");
-        int SSS = 4;
-        int TTT = 4;
+        int SSS = 4; // return value offset
+        int TTT = 8; // return value offset, if int.
         code.emit(n, "lw $t0,($sp)");
-        code.emit(n, "sw $t0,"+SSS+"($sp)");
         if (n.rtnType instanceof IntegerType) {
-            code.emit(n, "sw $s5"+TTT+"($sp)");
-        }
-        int RRR = stackHeight + SSS + TTT;
-        if (n.rtnType instanceof IntegerType) {
-            RRR += 8;
+            code.emit(n, "sw $s5,"+TTT+"($sp)");
         } else {
-            RRR += 4;
+            code.emit(n, "sw $t0,"+SSS+"($sp)");
+        }
+        int RRR = stackHeight + 4 + n.thisPtrOffset + 4;
+        if (n.rtnType instanceof IntegerType) {
+            RRR -= 8;
+        } else {
+            RRR -= 4;
         }
         code.emit(n, "addu $sp,$sp,"+ RRR);
         code.emit(n, "jr $ra");
