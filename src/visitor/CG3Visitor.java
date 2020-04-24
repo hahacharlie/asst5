@@ -666,8 +666,9 @@ public class CG3Visitor extends ASTvisitor {
         int QQQ = stackHeight;
         code.emit(n, "lw $ra,"+PPP+"($sp)");
         code.emit(n, "lw $s2,"+QQQ+"($sp)");
-        int RRR = stackHeight + 4 + 4;
+        int RRR = stackHeight + n.thisPtrOffset + 4;
         code.emit(n, "addu $sp,$sp,"+RRR);
+        stackHeight -= RRR;
         code.emit(n, "jr $ra");
         code.unindent(n);
         return null;
@@ -687,25 +688,26 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight = 0;
         n.stmts.accept(this);
         n.rtnExp.accept(this);
-        int PPP = stackHeight+n.thisPtrOffset+4;
-        int QQQ = stackHeight+n.thisPtrOffset;
+        int PPP = stackHeight+n.thisPtrOffset;
+        int QQQ = stackHeight;
         code.emit(n, "lw $ra,"+PPP+"($sp)");
         code.emit(n, "lw $s2,"+QQQ+"($sp)");
         int SSS = 4;
-        int TTT = 4;
+        int TTT = 8;
         code.emit(n, "lw $t0,($sp)");
         if (n.rtnType instanceof IntegerType) {
-            code.emit(n, "sw $s5"+TTT+"($sp)");
+            code.emit(n, "sw $s5,"+TTT+"($sp)");
         } else {
             code.emit(n, "sw $t0,"+SSS+"($sp)");
         }
-        int RRR = stackHeight + SSS + TTT;
+        int RRR = stackHeight + 4 + n.thisPtrOffset;
         if (n.rtnType instanceof IntegerType) {
-            RRR += 8;
+            RRR -= 8;
         } else {
-            RRR += 4;
+            RRR -= 4;
         }
         code.emit(n, "addu $sp,$sp,"+ RRR);
+        stackHeight -= RRR;
         code.emit(n, "jr $ra");
         code.unindent(n);
         return null;
