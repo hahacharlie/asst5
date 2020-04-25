@@ -3,7 +3,6 @@ package visitor;
 import syntaxtree.*;
 
 import errorMsg.*;
-import wrangLR.generator.util.ReverseArrayIterator;
 
 import java.io.*;
 
@@ -469,7 +468,7 @@ public class CG3Visitor extends ASTvisitor {
             code.emit(n, " lw $t0,-12($t0)");
             code.emit(n, " lw $t0,"+NNN+"($t0)");
             code.emit(n, " jalr $t0");
-            code.emit(n, "# stackHeight before change in call is " + stackHeight);
+            code.emit(n, "# stackHeight before change in call is " + stackHeight + "the old is " + oldStackHeight);
             if (n.obj.type instanceof IntegerType) {
                 stackHeight = oldStackHeight + 8;
             } else if (n.obj.type instanceof VoidType) {
@@ -665,14 +664,14 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, " lw $s2,"+NNN+"($sp)");
         code.emit(n, " sw $ra,"+NNN+"($sp)");
         stackHeight = 0;
-        n.stmts.accept(this); // generate code for the method's body
+        n.stmts.accept(this);
         code.emit(n, "# the stackHeight is " + stackHeight);
-        int PPP = stackHeight+n.thisPtrOffset;
-        int QQQ = stackHeight;
-        code.emit(n, " lw $ra,"+PPP+"($sp)");
-        code.emit(n, " lw $s2,"+QQQ+"($sp)");
-        int RRR = stackHeight + n.thisPtrOffset + 4;
-        code.emit(n, " addu $sp,$sp,"+RRR);
+        int savedReturnAddressOffset = stackHeight+n.thisPtrOffset; //offset of saved return address relative to current stack height
+        int thisPointerOffset = stackHeight; //offset of  saved this-pointer relative to current stack height
+        code.emit(n, " lw $ra,"+ savedReturnAddressOffset +"($sp)");
+        code.emit(n, " lw $s2,"+ thisPointerOffset +"($sp)");
+        int amountPopStack = stackHeight + n.thisPtrOffset + 4; // the amount that we need to pop off the stack
+        code.emit(n, " addu $sp,$sp,"+amountPopStack);
         code.emit(n, " jr $ra");
         //code.emit(n, "# After MethodDeclVoid the stackHeight is " + stackHeight);
         code.unindent(n);
@@ -694,27 +693,27 @@ public class CG3Visitor extends ASTvisitor {
         stackHeight = 0;
         n.stmts.accept(this);
         n.rtnExp.accept(this);
-        int PPP = stackHeight+n.thisPtrOffset;
-        int QQQ = stackHeight;
-        code.emit(n, "lw $ra,"+PPP+"($sp)");
-        code.emit(n, "lw $s2,"+QQQ+"($sp)");
+        int savedReturnAddressOffset = stackHeight+n.thisPtrOffset; //offset of saved return address relative to current stack height
+        int thisPointerOffset = stackHeight; //offset of  saved this-pointer relative to current stack height
+        code.emit(n, "lw $ra,"+ savedReturnAddressOffset +"($sp)");
+        code.emit(n, "lw $s2,"+ thisPointerOffset +"($sp)");
         code.emit(n, "lw $t0,($sp)");
         if (n.rtnType instanceof IntegerType) {
-            int SSS = stackHeight+n.thisPtrOffset-4;
-            int TTT = stackHeight+n.thisPtrOffset;
-            code.emit(n, "sw $t0,"+SSS+"($sp)");
-            code.emit(n, "sw $s5,"+TTT+"($sp)");
+            int returnValueOffset = stackHeight+n.thisPtrOffset-4;
+            int returnValueOffsetCG = stackHeight+n.thisPtrOffset;
+            code.emit(n, "sw $t0,"+returnValueOffset+"($sp)");
+            code.emit(n, "sw $s5,"+ returnValueOffsetCG +"($sp)");
         } else {
-            int SSS = stackHeight+n.thisPtrOffset;
-            code.emit(n, "sw $t0,"+SSS+"($sp)");
+            int returnValueOffset = stackHeight+n.thisPtrOffset;
+            code.emit(n, "sw $t0,"+returnValueOffset+"($sp)");
         }
-        int RRR = stackHeight + n.thisPtrOffset + 4;
+        int amountPopStack = stackHeight + n.thisPtrOffset + 4;// the amount that we need to pop off the stack
         if (n.rtnType instanceof IntegerType) {
-            RRR -= 8;
+            amountPopStack -= 8;
         } else {
-            RRR -= 4;
+            amountPopStack -= 4;
         }
-        code.emit(n, "addu $sp,$sp,"+ RRR);
+        code.emit(n, "addu $sp,$sp,"+ amountPopStack);
         code.emit(n, "jr $ra");
         code.emit(n, "# After MethodDeclNonVoid the stackHeight is " + stackHeight);
         code.unindent(n);
