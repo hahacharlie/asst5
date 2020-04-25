@@ -403,12 +403,12 @@ public class CG3Visitor extends ASTvisitor {
         //code.emit(n, "# Before NewObject stackHeight equals: "+stackHeight);
         int numOfObjInstVar = n.objType.link.numObjInstVars;
         int numOfDataInstVar = n.objType.link.numDataInstVars+1;
-        code.emit(n, "li $s6,"+numOfDataInstVar);
-        code.emit(n, "li $s7,"+numOfObjInstVar);
-        code.emit(n, "jal newObject");
+        code.emit(n, " li $s6,"+numOfDataInstVar);
+        code.emit(n, " li $s7,"+numOfObjInstVar);
+        code.emit(n, " jal newObject");
         stackHeight -= 4;
-        code.emit(n, "la $t0,CLASS_"+n.objType.link.name);
-        code.emit(n, "sw $t0,-12($s7)");
+        code.emit(n, " la $t0,CLASS_"+n.objType.link.name);
+        code.emit(n, " sw $t0,-12($s7)");
         //code.emit(n, "# After NewObject stackHeight equals: "+stackHeight);
         code.unindent(n);
 	    return null;
@@ -457,6 +457,7 @@ public class CG3Visitor extends ASTvisitor {
             n.parms.accept(this);
             int MMM = n.methodLink.thisPtrOffset-4;
             int NNN = 4*n.methodLink.vtableOffset;
+            code.emit(n, "# Now the vtableOffset is:" + n.methodLink.vtableOffset);
             code.emit(n, " lw $t0,"+MMM+"($sp)");
             code.emit(n, " beq $t0,$zero,nullPtrException");
             code.emit(n, " lw $t0,-12($t0)");
@@ -718,18 +719,18 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, " .text");
         code.emit(n, " .globl main");
         code.emit(n, "main:");
-        code.emit(n, "# initialize registers, etc.");
+        //code.emit(n, "# initialize registers, etc.");
         code.emit(n, "jal vm_init");
         stackHeight = 0;
         n.mainStatement.accept(this);
         code.emit(n, "# exit program");
         code.emit(n, " li $v0,10");
         code.emit(n, " syscall");
-        code.emit(n, "# program exited...............");
+        //code.emit(n, "# program exited...............");
 
         n.classDecls.accept(this);
         code.flush();
-        code.emit(n, "# After Program stackHeight equals: "+stackHeight);
+        //code.emit(n, "# After Program stackHeight equals: "+stackHeight);
         code.unindent(n);
         return null;
     }

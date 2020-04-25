@@ -185,6 +185,21 @@ public class CG1Visitor extends ASTvisitor {
 		}
 	}
 
+	private int numMethods(ClassDecl cd) {
+		int num = 0;
+		ClassDecl cur = cd;
+		while (cur.superLink != null) {
+			num = num + cur.superLink.methodTable.size();
+			cur = cur.superLink;
+		}
+		for (MethodDecl m : cd.methodTable.values()) {
+			if (m.superMethod != null) {
+				num++;
+			}
+		}
+		return num;
+	}
+
 	@Override
 	public Object visitProgram(Program p) {
 		code.emit(p, ".data");
@@ -205,9 +220,16 @@ public class CG1Visitor extends ASTvisitor {
 			currentDataInstVarOffset = -16;
 			currentObjInstVarOffset = 0;
 		} else {
-			currentMethodOffset = cd.superLink.methodTable.size();
-			currentDataInstVarOffset = -16 - 4*cd.superLink.numDataInstVars;
-			currentObjInstVarOffset = 4*cd.superLink.numObjInstVars;
+			ClassDecl cur = cd;
+			currentMethodOffset = 0;
+			currentDataInstVarOffset = -16;
+			currentObjInstVarOffset = 0;
+			while (cur.superLink != null) {
+				currentMethodOffset = currentMethodOffset + cur.superLink.methodTable.size();
+				currentDataInstVarOffset = currentDataInstVarOffset - 4*cd.superLink.numDataInstVars;
+				currentObjInstVarOffset = currentObjInstVarOffset + 4*cd.superLink.numObjInstVars;
+				cur = cur.superLink;
+			}
 		}
 		super.visitClassDecl(cd);
 		cd.numDataInstVars = (-16 - currentDataInstVarOffset) / 4;
