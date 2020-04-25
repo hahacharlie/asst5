@@ -400,16 +400,20 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitNewObject(NewObject n) {
         code.indent(n);
-        //code.emit(n, "# Before NewObject stackHeight equals: "+stackHeight);
+        code.emit(n, "# Before NewObject stackHeight equals: "+stackHeight);
         int numOfObjInstVar = n.objType.link.numObjInstVars;
         int numOfDataInstVar = n.objType.link.numDataInstVars+1;
         code.emit(n, " li $s6,"+numOfDataInstVar);
         code.emit(n, " li $s7,"+numOfObjInstVar);
         code.emit(n, " jal newObject");
-        stackHeight -= 4;
+        if (n.type instanceof IntegerType) {
+            stackHeight -= 8;
+        } else {
+            stackHeight -= 4;
+        }
         code.emit(n, " la $t0,CLASS_"+n.objType.link.name);
         code.emit(n, " sw $t0,-12($s7)");
-        //code.emit(n, "# After NewObject stackHeight equals: "+stackHeight);
+        code.emit(n, "# After NewObject stackHeight equals: "+stackHeight);
         code.unindent(n);
 	    return null;
     }
@@ -453,7 +457,9 @@ public class CG3Visitor extends ASTvisitor {
         } else {
             int oldStackHeight = stackHeight;
             n.obj.accept(this);
-            code.emit(n, " lw $zero,($sp)");
+//            if (n.obj.toString().equals("this")) {
+//                code.emit(n, " lw $zero,($sp)");
+//            }
             n.parms.accept(this);
             int MMM = n.methodLink.thisPtrOffset-4;
             int NNN = 4*n.methodLink.vtableOffset;
@@ -463,6 +469,7 @@ public class CG3Visitor extends ASTvisitor {
             code.emit(n, " lw $t0,-12($t0)");
             code.emit(n, " lw $t0,"+NNN+"($t0)");
             code.emit(n, " jalr $t0");
+            code.emit(n, "# stackHeight before change in call is " + stackHeight);
             if (n.obj.type instanceof IntegerType) {
                 stackHeight = oldStackHeight + 8;
             } else if (n.obj.type instanceof VoidType) {
@@ -470,6 +477,7 @@ public class CG3Visitor extends ASTvisitor {
             } else {
                 stackHeight = oldStackHeight + 4;
             }
+            code.emit(n, "# stackHeight after change in call is " + stackHeight);
         }
         //code.emit(n, "# After Call stackHeight equals: "+stackHeight);
         code.unindent(n);
@@ -727,7 +735,6 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, " li $v0,10");
         code.emit(n, " syscall");
         //code.emit(n, "# program exited...............");
-
         n.classDecls.accept(this);
         code.flush();
         //code.emit(n, "# After Program stackHeight equals: "+stackHeight);
