@@ -167,38 +167,20 @@ public class CG1Visitor extends ASTvisitor {
 
 	////********* THE CS 358 STUDENT'S CODE (VISITORS AND HELPER METHODS) SHOULD STARTER HERE
 
-	private void registerMethodInTable(MethodDecl md){
-		if(md.pos < 0){
-			if (md.superMethod == null) {
-				currentMethodTable.add(md.name + "_" + md.classDecl.name);
-			} else {
-				currentMethodTable.remove(md.superMethod.name);
-				currentMethodTable.add(md.superMethod.vtableOffset, md.name + "_" + md.classDecl.name);
-			}
-		} else {
-			if (md.superMethod != null) {
-				currentMethodTable.remove(md.superMethod.name);
-				currentMethodTable.add(md.superMethod.vtableOffset, "fcn_" + md.uniqueId + "_" + md.name);
-			} else {
-				currentMethodTable.add("fcn_" + md.uniqueId + "_" + md.name);
-			}
-		}
-	}
-
-	private int numMethods(ClassDecl cd) {
-		int num = 0;
-		ClassDecl cur = cd;
-		while (cur.superLink != null) {
-			num = num + cur.superLink.methodTable.size();
-			cur = cur.superLink;
-		}
-		for (MethodDecl m : cd.methodTable.values()) {
-			if (m.superMethod != null) {
-				num++;
-			}
-		}
-		return num;
-	}
+//	private int numMethods(ClassDecl cd) {
+//		int num = 0;
+//		ClassDecl cur = cd;
+//		while (cur.superLink != null) {
+//			num = num + cur.superLink.methodTable.size();
+//			cur = cur.superLink;
+//		}
+//		for (MethodDecl m : cd.methodTable.values()) {
+//			if (m.superMethod != null) {
+//				num++;
+//			}
+//		}
+//		return num;
+//	}
 
 	@Override
 	public Object visitProgram(Program p) {
@@ -221,14 +203,17 @@ public class CG1Visitor extends ASTvisitor {
 			currentDataInstVarOffset = -16;
 			currentObjInstVarOffset = 0;
 		} else {
+//			currentMethodOffset = cd.superLink.methodTable.size();
+//			currentDataInstVarOffset = -16 - 4*cd.superLink.numDataInstVars;
+//			currentObjInstVarOffset = 4*cd.superLink.numObjInstVars;
 			ClassDecl cur = cd;
 			currentMethodOffset = 0;
 			currentDataInstVarOffset = -16;
 			currentObjInstVarOffset = 0;
 			while (cur.superLink != null) {
 				currentMethodOffset = currentMethodOffset + cur.superLink.methodTable.size();
-				currentDataInstVarOffset = currentDataInstVarOffset - 4*cd.superLink.numDataInstVars;
-				currentObjInstVarOffset = currentObjInstVarOffset + 4*cd.superLink.numObjInstVars;
+				currentDataInstVarOffset = currentDataInstVarOffset - 4*cur.superLink.numDataInstVars;
+				currentObjInstVarOffset = currentObjInstVarOffset + 4*cur.superLink.numObjInstVars;
 				cur = cur.superLink;
 			}
 		}
@@ -264,7 +249,23 @@ public class CG1Visitor extends ASTvisitor {
 			md.vtableOffset = currentMethodOffset;
 			currentMethodOffset++;
 		}
-		registerMethodInTable(md);
+		if(md.pos < 0){
+			//currentMethodTable.add(md.vtableOffset, md.name + "_" + md.classDecl.name);
+			if (md.superMethod == null) {
+				currentMethodTable.add(md.name + "_" + md.classDecl.name);
+			} else {
+				currentMethodTable.remove(md.superMethod.vtableOffset);
+				currentMethodTable.add(md.superMethod.vtableOffset, md.name + "_" + md.classDecl.name);
+			}
+		} else {
+			//currentMethodTable.add(md.vtableOffset, "fcn_" + md.uniqueId + "_" + md.name);
+			if (md.superMethod == null) {
+				currentMethodTable.add("fcn_" + md.uniqueId + "_" + md.name);
+			} else {
+				currentMethodTable.remove(md.superMethod.vtableOffset);
+				currentMethodTable.add(md.superMethod.vtableOffset, "fcn_" + md.uniqueId + "_" + md.name);
+			}
+		}
 		//code.emit(md, "# ****** method "+md.name+" end ****** ");
 		return null;
 	}
