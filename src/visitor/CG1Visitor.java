@@ -196,7 +196,6 @@ public class CG1Visitor extends ASTvisitor {
 
 	@Override
 	public Object visitClassDecl(ClassDecl cd) {
-		code.emit(cd, "# ****** class "+cd.name+" ****** ");
 		currentMethodTable = superclassMethodTables.peek();
 		if (cd.superLink == null) {
 			currentMethodOffset = 0;
@@ -232,7 +231,7 @@ public class CG1Visitor extends ASTvisitor {
 		}
 		superclassMethodTables.pop();
 		code.emit(cd, "END_CLASS_" + cd.name + ":");
-		//code.emit(cd, "# ****** class "+cd.name+" ****** ");
+		code.emit(cd, "# ****** class "+cd.name+" ****** ");
 		return null;
 	}
 
