@@ -87,12 +87,12 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitStringLiteral(StringLiteral n) {
         code.indent(n);
-        code.emit(n, "# Before StringLiteral stackHeight equals: "+stackHeight);
+        //code.emit(n, "# Before StringLiteral stackHeight equals: "+stackHeight);
         code.emit(n, "subu $sp,$sp,4");
         stackHeight += 4;
         code.emit(n, "la $t0,strLit_"+n.uniqueCgRep.uniqueId);
         code.emit(n, "sw $t0,($sp)");
-        code.emit(n, "# After StringLiteral stackHeight equals: "+stackHeight);
+        //code.emit(n, "# After StringLiteral stackHeight equals: "+stackHeight);
         code.unindent(n);
 	    return null;
     }
@@ -349,7 +349,7 @@ public class CG3Visitor extends ASTvisitor {
             stackHeight -= 8;
         }
         code.unindent(n);
-        return super.visitArrayLookup(n);
+        return null;
     }
 
     @Override
@@ -454,29 +454,30 @@ public class CG3Visitor extends ASTvisitor {
             //code.emit(n, "# the stackHeight before obj is " + stackHeight);
             n.obj.accept(this);
             //code.emit(n, "# the stackHeight after obj is " + stackHeight);
+            code.emit(n, "lw $zero,($sp)");
             //code.emit(n, "# the stackHeight before parms is " + stackHeight);
             n.parms.accept(this);
             //code.emit(n, "# the stackHeight after parms is " + stackHeight);
             int MMM = n.methodLink.thisPtrOffset-4;
             int NNN = 4*n.methodLink.vtableOffset;
-            code.emit(n, "# Now the vtableOffset is:" + n.methodLink.vtableOffset);
-            code.emit(n, " lw $t0,"+MMM+"($sp)");
-            code.emit(n, " beq $t0,$zero,nullPtrException");
-            code.emit(n, " lw $t0,-12($t0)");
-            code.emit(n, " lw $t0,"+NNN+"($t0)");
-            code.emit(n, " jalr $t0");
-            code.emit(n, "# stackHeight before change in call is " + stackHeight + " the old is " + oldStackHeight);
+            //code.emit(n, "# Now the vtableOffset is:" + n.methodLink.vtableOffset);
+            code.emit(n, "lw $t0,"+MMM+"($sp)");
+            code.emit(n, "beq $t0,$zero,nullPtrException");
+            code.emit(n, "lw $t0,-12($t0)");
+            code.emit(n, "lw $t0,"+NNN+"($t0)");
+            code.emit(n, "jalr $t0");
+            //code.emit(n, "# stackHeight before change in call is " + stackHeight + " the old is " + oldStackHeight);
             if (n.type instanceof IntegerType) {
                 stackHeight = oldStackHeight + 8;
-                code.emit(n, "# Integer type found");
+                //code.emit(n, "# Integer type found");
             } else if (n.type instanceof VoidType) {
                 stackHeight = oldStackHeight;
-                code.emit(n, "# Void Type found");
+                //code.emit(n, "# Void Type found");
             } else {
                 stackHeight = oldStackHeight + 4;
-                code.emit(n, "# Obj Type found");
+                //code.emit(n, "# Obj Type found");
             }
-            code.emit(n, "# stackHeight after change in call is " + stackHeight + " the old is " + oldStackHeight);
+            //code.emit(n, "# stackHeight after change in call is " + stackHeight + " the old is " + oldStackHeight);
         }
         //code.emit(n, "# After Call stackHeight equals: "+stackHeight);
         code.unindent(n);
@@ -658,7 +659,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, ".globl fcn_"+n.uniqueId+"_"+n.name);
         code.emit(n, "fcn_"+n.uniqueId+"_"+n.name+":");
         code.emit(n, " subu $sp,$sp,4");
-        stackHeight += 4;
+        //stackHeight += 4;
         code.emit(n, " sw $s2,($sp)");
         int NNN = n.thisPtrOffset;
         code.emit(n, " lw $s2,"+NNN+"($sp)");
@@ -685,7 +686,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, ".globl fcn_"+n.uniqueId+"_"+n.name);
         code.emit(n, "fcn_"+n.uniqueId+"_"+n.name+":");
         code.emit(n, "subu $sp,$sp,4");
-        stackHeight += 4;
+        //stackHeight += 4;
         code.emit(n, "sw $s2,($sp)");
         int NNN = n.thisPtrOffset;
         code.emit(n, "lw $s2,"+NNN+"($sp)");
@@ -721,23 +722,28 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
+    public Object visitClassDecl(ClassDecl n) {
+        return super.visitClassDecl(n);
+    }
+
+    @Override
     public Object visitProgram(Program n) {
-        code.indent(n);
         code.emit(n, " .text");
+        code.indent(n);
         code.emit(n, " .globl main");
         code.emit(n, "main:");
         //code.emit(n, "# initialize registers, etc.");
         code.emit(n, "jal vm_init");
         stackHeight = 0;
         n.mainStatement.accept(this);
-        code.emit(n, "# exit program");
+        //code.emit(n, "# exit program");
         code.emit(n, " li $v0,10");
         code.emit(n, " syscall");
+        code.unindent(n);
         //code.emit(n, "# program exited...............");
         n.classDecls.accept(this);
         code.flush();
         //code.emit(n, "# After Program stackHeight equals: "+stackHeight);
-        code.unindent(n);
         return null;
     }
 }
