@@ -43,13 +43,13 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitIntegerLiteral(IntegerLiteral n) {
 	    code.indent(n);
-        code.emit(n, "# Before IntegerLiteral stackHeight equals: "+stackHeight);
+        //code.emit(n, "# Before IntegerLiteral stackHeight equals: "+stackHeight);
 	    code.emit(n, "subu $sp,$sp,8");
         stackHeight += 8;
         code.emit(n, "sw $s5,4($sp)");
         code.emit(n,"li $t0,"+n.val);
         code.emit(n, "sw $t0,($sp)");
-        code.emit(n, "# After IntegerLiteral stackHeight equals: "+stackHeight);
+        //code.emit(n, "# After IntegerLiteral stackHeight equals: "+stackHeight);
         code.unindent(n);
 	    return null;
     }
@@ -121,24 +121,25 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitIdentifierExp(IdentifierExp n) {
         code.indent(n);
-        code.emit(n, "# Before IdentifierExp stackHeight equals: "+stackHeight);
+        //code.emit(n, "# Before IdentifierExp stackHeight equals: "+stackHeight);
         if (n.link instanceof InstVarDecl) {
-            code.emit(n, "lw $t0,"+n.link.offset+"($s2)");
-        }else {
-            int sum = n.link.offset+stackHeight;
-            code.emit(n, "lw $t0,"+sum+"($sp)");
+            int NNN = n.link.offset;
+            code.emit(n, "lw $t0,"+NNN+"($s2)");
+        } else {
+            int NNN = n.link.offset+stackHeight;
+            code.emit(n, "lw $t0,"+NNN+"($sp)" + "# local: stackHeight:" + stackHeight + " var-offset:" + n.link.offset);
         }
         if (n.type instanceof IntegerType) {
             code.emit(n, "subu $sp,$sp,8");
             stackHeight += 8;
             code.emit(n, "sw $s5,4($sp)");
             code.emit(n, "sw $t0,($sp)");
-        }else {
+        }else if (!(n.type instanceof VoidType)) {
             code.emit(n, "subu $sp,$sp,4");
             stackHeight += 4;
             code.emit(n, "sw $t0,($sp)");
         }
-        code.emit(n, "# After IdentifierExp stackHeight equals: "+stackHeight);
+        //code.emit(n, "# After IdentifierExp stackHeight equals: "+stackHeight);
         code.unindent(n);
 	    return null;
     }
@@ -432,16 +433,15 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitCall(Call n) {
         code.indent(n);
-        code.emit(n, "# Before call stackHeight equals: "+stackHeight);
+        //code.emit(n, "# Before call stackHeight equals: "+stackHeight);
 	    if (n.obj instanceof Super) {
-            //code.emit(n, "# if call is super, start stackHeight equals: "+stackHeight);
             int oldStackHeight = stackHeight;
             n.obj.accept(this);
             n.parms.accept(this);
             if (n.methodLink.pos < 0) {
-                code.emit(n, "jal "+n.methodLink.name+"_"+n.methodLink.classDecl.name);
+                code.emit(n, " jal "+n.methodLink.name+"_"+n.methodLink.classDecl.name);
             } else {
-                code.emit(n, "jal fcn_"+n.methodLink.uniqueId+"_"+n.methodLink.name);
+                code.emit(n, " jal fcn_"+n.methodLink.uniqueId+"_"+n.methodLink.name);
             }
             if (n.type instanceof IntegerType) {
                 stackHeight = oldStackHeight + 8;
@@ -451,17 +451,17 @@ public class CG3Visitor extends ASTvisitor {
                 stackHeight = oldStackHeight + 4;
             }
         } else {
-            //code.emit(n, "# if call is not super start stackHeight equals: "+stackHeight);
             int oldStackHeight = stackHeight;
             n.obj.accept(this);
+            code.emit(n, " lw $zero,($sp)");
             n.parms.accept(this);
             int MMM = n.methodLink.thisPtrOffset-4;
             int NNN = 4*n.methodLink.vtableOffset;
-            code.emit(n, "lw $t0,"+MMM+"($sp)");
-            code.emit(n, "beq $t0,$zero,nullPtrException");
-            code.emit(n, "lw $t0,-12($t0)");
-            code.emit(n, "lw $t0,"+NNN+"($t0)");
-            code.emit(n, "jalr $t0");
+            code.emit(n, " lw $t0,"+MMM+"($sp)");
+            code.emit(n, " beq $t0,$zero,nullPtrException");
+            code.emit(n, " lw $t0,-12($t0)");
+            code.emit(n, " lw $t0,"+NNN+"($t0)");
+            code.emit(n, " jalr $t0");
             if (n.obj.type instanceof IntegerType) {
                 stackHeight = oldStackHeight + 8;
             } else if (n.obj.type instanceof VoidType) {
@@ -470,7 +470,7 @@ public class CG3Visitor extends ASTvisitor {
                 stackHeight = oldStackHeight + 4;
             }
         }
-        code.emit(n, "# After Call stackHeight equals: "+stackHeight);
+        //code.emit(n, "# After Call stackHeight equals: "+stackHeight);
         code.unindent(n);
 	    return null;
     }
@@ -487,7 +487,7 @@ public class CG3Visitor extends ASTvisitor {
     @Override
     public Object visitCallStatement(CallStatement n) {
         code.indent(n);
-        code.emit(n, "# Before CallStatement stackHeight equals: "+stackHeight);
+        //code.emit(n, "# Before CallStatement stackHeight equals: "+stackHeight);
         n.callExp.accept(this);
         if (n.callExp.type instanceof IntegerType) {
             code.emit(n, "addu $sp,$sp,8");
@@ -496,7 +496,7 @@ public class CG3Visitor extends ASTvisitor {
             code.emit(n, "addu $sp,$sp,4");
             stackHeight -= 4;
         }
-        code.emit(n, "# After CallStatement stackHeight equals: "+stackHeight);
+        //code.emit(n, "# After CallStatement stackHeight equals: "+stackHeight);
         code.unindent(n);
 	    return null;
     }
@@ -558,7 +558,6 @@ public class CG3Visitor extends ASTvisitor {
             code.emit(n, "addu $sp,"+diff);
         }
         code.emit(n, "j break_target_"+n.uniqueId);
-        //tackHeight -= diff;
         code.unindent(n);
 	    return null;
     }
@@ -645,33 +644,28 @@ public class CG3Visitor extends ASTvisitor {
     }
 
     @Override
-    public Object visitSwitch(Switch n) {
-        return super.visitSwitch(n);
-    }
-
-    @Override
     public Object visitMethodDeclVoid(MethodDeclVoid n) {
         code.indent(n);
-        code.emit(n, "# Before MethodDeclVoid the stackHeight is " + stackHeight);
+        //code.emit(n, "# Before MethodDeclVoid the stackHeight is " + stackHeight);
         code.emit(n, ".globl fcn_"+n.uniqueId+"_"+n.name);
         code.emit(n, "fcn_"+n.uniqueId+"_"+n.name+":");
-        code.emit(n, "subu $sp,$sp,4");
+        code.emit(n, " subu $sp,$sp,4");
         stackHeight += 4;
-        code.emit(n, "sw $s2,($sp)");
+        code.emit(n, " sw $s2,($sp)");
         int NNN = n.thisPtrOffset;
-        code.emit(n, "lw $s2,"+NNN+"($sp)");
-        code.emit(n, "sw $ra,"+NNN+"($sp)");
+        code.emit(n, " lw $s2,"+NNN+"($sp)");
+        code.emit(n, " sw $ra,"+NNN+"($sp)");
         stackHeight = 0;
         n.stmts.accept(this); // generate code for the method's body
+        code.emit(n, "# the stackHeight is " + stackHeight);
         int PPP = stackHeight+n.thisPtrOffset;
         int QQQ = stackHeight;
-        code.emit(n, "lw $ra,"+PPP+"($sp)");
-        code.emit(n, "lw $s2,"+QQQ+"($sp)");
+        code.emit(n, " lw $ra,"+PPP+"($sp)");
+        code.emit(n, " lw $s2,"+QQQ+"($sp)");
         int RRR = stackHeight + n.thisPtrOffset + 4;
-        code.emit(n, "addu $sp,$sp,"+RRR);
-        //stackHeight -= RRR;
-        code.emit(n, "jr $ra");
-        code.emit(n, "# After MethodDeclVoid the stackHeight is " + stackHeight);
+        code.emit(n, " addu $sp,$sp,"+RRR);
+        code.emit(n, " jr $ra");
+        //code.emit(n, "# After MethodDeclVoid the stackHeight is " + stackHeight);
         code.unindent(n);
         return null;
     }
@@ -712,7 +706,6 @@ public class CG3Visitor extends ASTvisitor {
             RRR -= 4;
         }
         code.emit(n, "addu $sp,$sp,"+ RRR);
-        //stackHeight -= RRR;
         code.emit(n, "jr $ra");
         code.emit(n, "# After MethodDeclNonVoid the stackHeight is " + stackHeight);
         code.unindent(n);

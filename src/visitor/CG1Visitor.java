@@ -167,9 +167,22 @@ public class CG1Visitor extends ASTvisitor {
 
 	////********* THE CS 358 STUDENT'S CODE (VISITORS AND HELPER METHODS) SHOULD STARTER HERE
 
-	private void registerMethodInTable(MethodDecl md, String label){
-		currentMethodTable.ensureCapacity(md.vtableOffset);
-		currentMethodTable.add(md.vtableOffset, label);
+	private void registerMethodInTable(MethodDecl md){
+		if(md.pos < 0){
+			if (md.superMethod == null) {
+				currentMethodTable.add(md.name + "_" + md.classDecl.name);
+			} else {
+				currentMethodTable.remove(md.superMethod.name);
+				currentMethodTable.add(md.superMethod.vtableOffset, md.name + "_" + md.classDecl.name);
+			}
+		} else {
+			if (md.superMethod != null) {
+				currentMethodTable.remove(md.superMethod.name);
+				currentMethodTable.add(md.superMethod.vtableOffset, "fcn_" + md.uniqueId + "_" + md.name);
+			} else {
+				currentMethodTable.add("fcn_" + md.uniqueId + "_" + md.name);
+			}
+		}
 	}
 
 	@Override
@@ -186,7 +199,6 @@ public class CG1Visitor extends ASTvisitor {
 
 	@Override
 	public Object visitClassDecl(ClassDecl cd) {
-		code.emit(cd, "# ****** class "+cd.name+" start ****** ");
 		currentMethodTable = superclassMethodTables.peek();
 		if (cd.superLink == null) {
 			currentMethodOffset = 0;
@@ -212,13 +224,13 @@ public class CG1Visitor extends ASTvisitor {
 		}
 		superclassMethodTables.pop();
 		code.emit(cd, "END_CLASS_" + cd.name + ":");
-		code.emit(cd, "# ****** class "+cd.name+" end ****** ");
+		code.emit(cd, "# ****** class "+cd.name+" ****** ");
 		return null;
 	}
 
 	@Override
 	public Object visitMethodDecl(MethodDecl md){
-		code.emit(md, "# ****** method "+md.name+" start ****** ");
+		//code.emit(md, "# ****** method "+md.name+" start ****** ");
 		int numWordsFormals = md.formals.size();
 		md.thisPtrOffset = 4 * (1 + numWordsFormals);
 		currentFormalVarOffset = md.thisPtrOffset;
@@ -229,12 +241,8 @@ public class CG1Visitor extends ASTvisitor {
 			md.vtableOffset = currentMethodOffset;
 			currentMethodOffset++;
 		}
-		if(md.pos < 0){
-			registerMethodInTable(md, md.name + "_" + md.classDecl.name);
-		} else {
-			registerMethodInTable(md, "fcn_" + md.uniqueId + "_" + md.name);
-		}
-		code.emit(md, "# ****** method "+md.name+" end ****** ");
+		registerMethodInTable(md);
+		//code.emit(md, "# ****** method "+md.name+" end ****** ");
 		return null;
 	}
 
@@ -244,7 +252,7 @@ public class CG1Visitor extends ASTvisitor {
 		if (n.type instanceof IntegerType || n.type instanceof BooleanType) {
 			n.offset = currentDataInstVarOffset;
 			currentDataInstVarOffset -= 4;
-		} else /*if (!(n.type instanceof VoidType))*/ {
+		} else if (!(n.type instanceof VoidType)) {
 			n.offset = currentObjInstVarOffset;
 			currentObjInstVarOffset += 4;
 		}
