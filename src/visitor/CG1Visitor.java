@@ -249,7 +249,6 @@ public class CG1Visitor extends ASTvisitor {
 			currentMethodOffset++;
 		}
 		if(md.pos < 0){
-			//currentMethodTable.add(md.vtableOffset, md.name + "_" + md.classDecl.name);
 			if (md.superMethod == null) {
 				currentMethodTable.add(md.name + "_" + md.classDecl.name);
 			} else {
@@ -257,7 +256,6 @@ public class CG1Visitor extends ASTvisitor {
 				currentMethodTable.add(md.superMethod.vtableOffset, md.name + "_" + md.classDecl.name);
 			}
 		} else {
-			//currentMethodTable.add(md.vtableOffset, "fcn_" + md.uniqueId + "_" + md.name);
 			if (md.superMethod == null) {
 				currentMethodTable.add("fcn_" + md.uniqueId + "_" + md.name);
 			} else {
@@ -265,7 +263,6 @@ public class CG1Visitor extends ASTvisitor {
 				currentMethodTable.add(md.superMethod.vtableOffset, "fcn_" + md.uniqueId + "_" + md.name);
 			}
 		}
-		//code.emit(md, "# ****** method "+md.name+" end ****** ");
 		return null;
 	}
 
