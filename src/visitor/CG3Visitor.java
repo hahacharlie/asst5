@@ -405,11 +405,7 @@ public class CG3Visitor extends ASTvisitor {
         code.emit(n, " li $s6,"+numOfDataInstVar);
         code.emit(n, " li $s7,"+numOfObjInstVar);
         code.emit(n, " jal newObject");
-        if (n.type instanceof IntegerType) {
-            stackHeight -= 8;
-        } else {
-            stackHeight -= 4;
-        }
+        stackHeight -= 4;
         code.emit(n, " la $t0,CLASS_"+n.objType.link.name);
         code.emit(n, " sw $t0,-12($s7)");
         code.emit(n, "# After NewObject stackHeight equals: "+stackHeight);
@@ -455,11 +451,12 @@ public class CG3Visitor extends ASTvisitor {
             }
         } else {
             int oldStackHeight = stackHeight;
+            //code.emit(n, "# the stackHeight before obj is " + stackHeight);
             n.obj.accept(this);
-//            if (n.obj.toString().equals("this")) {
-//                code.emit(n, " lw $zero,($sp)");
-//            }
+            //code.emit(n, "# the stackHeight after obj is " + stackHeight);
+            //code.emit(n, "# the stackHeight before parms is " + stackHeight);
             n.parms.accept(this);
+            //code.emit(n, "# the stackHeight after parms is " + stackHeight);
             int MMM = n.methodLink.thisPtrOffset-4;
             int NNN = 4*n.methodLink.vtableOffset;
             code.emit(n, "# Now the vtableOffset is:" + n.methodLink.vtableOffset);
@@ -468,15 +465,18 @@ public class CG3Visitor extends ASTvisitor {
             code.emit(n, " lw $t0,-12($t0)");
             code.emit(n, " lw $t0,"+NNN+"($t0)");
             code.emit(n, " jalr $t0");
-            code.emit(n, "# stackHeight before change in call is " + stackHeight + "the old is " + oldStackHeight);
-            if (n.obj.type instanceof IntegerType) {
+            code.emit(n, "# stackHeight before change in call is " + stackHeight + " the old is " + oldStackHeight);
+            if (n.type instanceof IntegerType) {
                 stackHeight = oldStackHeight + 8;
-            } else if (n.obj.type instanceof VoidType) {
+                code.emit(n, "# Integer type found");
+            } else if (n.type instanceof VoidType) {
                 stackHeight = oldStackHeight;
+                code.emit(n, "# Void Type found");
             } else {
                 stackHeight = oldStackHeight + 4;
+                code.emit(n, "# Obj Type found");
             }
-            code.emit(n, "# stackHeight after change in call is " + stackHeight);
+            code.emit(n, "# stackHeight after change in call is " + stackHeight + " the old is " + oldStackHeight);
         }
         //code.emit(n, "# After Call stackHeight equals: "+stackHeight);
         code.unindent(n);
