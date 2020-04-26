@@ -196,7 +196,8 @@ public class CG1Visitor extends ASTvisitor {
 
 	@Override
 	public Object visitClassDecl(ClassDecl cd) {
-		currentMethodTable = superclassMethodTables.peek();
+		code.emit(cd, "# ****** class "+cd.name+" ****** ");
+		currentMethodTable = (ArrayList<String>) superclassMethodTables.peek().clone();
 		if (cd.superLink == null) {
 			currentMethodOffset = 0;
 			currentDataInstVarOffset = -16;
@@ -231,14 +232,21 @@ public class CG1Visitor extends ASTvisitor {
 		}
 		superclassMethodTables.pop();
 		code.emit(cd, "END_CLASS_" + cd.name + ":");
-		code.emit(cd, "# ****** class "+cd.name+" ****** ");
 		return null;
 	}
 
 	@Override
 	public Object visitMethodDecl(MethodDecl md){
 		//code.emit(md, "# ****** method "+md.name+" start ****** ");
-		int numWordsFormals = md.formals.size();
+		int numWordsFormals = 0;
+		for (VarDecl v: md.formals) {
+			if (v.type instanceof IntegerType) {
+				numWordsFormals ++;
+				numWordsFormals ++;
+			} else {
+				numWordsFormals ++;
+			}
+		}
 		md.thisPtrOffset = 4 * (1 + numWordsFormals);
 		currentFormalVarOffset = md.thisPtrOffset;
 		super.visitMethodDecl(md);
